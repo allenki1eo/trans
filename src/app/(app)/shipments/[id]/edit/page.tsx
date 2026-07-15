@@ -1,0 +1,62 @@
+import { notFound } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { shipments, tripAssignments } from "@/lib/db/schema";
+import { requireRole } from "@/lib/auth/require";
+import { getT } from "@/lib/i18n/locale";
+import { customerOptions, driverOptions, vehicleOptions } from "@/lib/queries/options";
+import { PageHeader } from "@/components/page-header";
+import { ShipmentForm } from "../../shipment-form";
+
+export default async function EditShipmentPage({ params }: { params: { id: string } }) {
+  await requireRole("owner", "dispatcher");
+  const t = getT();
+
+  const shipment = await db.query.shipments.findFirst({ where: eq(shipments.id, params.id) });
+  if (!shipment) notFound();
+
+  const assignment = await db.query.tripAssignments.findFirst({
+    where: eq(tripAssignments.shipmentId, shipment.id),
+  });
+
+  const [customers, vehicles, drivers] = await Promise.all([
+    customerOptions(),
+    vehicleOptions(),
+    driverOptions(),
+  ]);
+
+  return (
+    <div>
+      <PageHeader title={t.shipments.edit} />
+      <ShipmentForm
+        id={shipment.id}
+        defaults={{
+          customerId: shipment.customerId,
+          vehicleId: shipment.vehicleId ?? "",
+          driverId: assignment?.driverId ?? "",
+          origin: shipment.origin,
+          destination: shipment.destination,
+          goodsDescription: shipment.goodsDescription,
+          weightOrUnits: shipment.weightOrUnits ?? "",
+          price: shipment.price,
+        }}
+        customers={customers}
+        vehicles={vehicles}
+        drivers={drivers}
+        labels={{
+          customer: t.shipments.customer,
+          vehicle: t.shipments.vehicle,
+          driver: t.shipments.driver,
+          origin: t.shipments.origin,
+          destination: t.shipments.destination,
+          goods: t.shipments.goods,
+          weight: t.shipments.weight,
+          price: t.shipments.price,
+          save: t.common.save,
+          cancel: t.common.cancel,
+          required: t.common.required,
+        }}
+      />
+    </div>
+  );
+}
