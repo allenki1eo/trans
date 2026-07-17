@@ -33,6 +33,7 @@ export const shipmentSchema = z.object({
   goodsDescription: z.string().trim().min(1),
   weightOrUnits: z.string().trim().optional().or(z.literal("")),
   price: z.coerce.number().min(0),
+  distanceKm: z.coerce.number().min(0).optional(),
 });
 
 export const shipmentStatusSchema = z.object({

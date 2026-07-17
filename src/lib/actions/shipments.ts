@@ -25,6 +25,7 @@ export async function upsertShipment(id: string | null, input: ShipmentInput) {
     goodsDescription: data.goodsDescription,
     weightOrUnits: data.weightOrUnits || null,
     price: data.price,
+    distanceKm: data.distanceKm || null,
   };
 
   if (id) {

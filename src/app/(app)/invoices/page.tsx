@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { desc, eq, sql } from "drizzle-orm";
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { db } from "@/lib/db/client";
 import { customers, invoices, payments } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/require";
@@ -31,12 +31,20 @@ export default async function InvoicesPage() {
       <PageHeader
         title={t.invoices.title}
         action={
-          can(user.role, "invoices.create") && (
-            <Link href="/invoices/new" className={buttonVariants()}>
-              <Plus className="h-4 w-4" />
-              {t.invoices.new}
-            </Link>
-          )
+          <div className="flex items-center gap-2">
+            {can(user.role, "export.csv") && (
+              <a href="/api/export/invoices" className={buttonVariants({ variant: "secondary" })}>
+                <Download className="h-4 w-4" />
+                {t.common.exportCsv}
+              </a>
+            )}
+            {can(user.role, "invoices.create") && (
+              <Link href="/invoices/new" className={buttonVariants()}>
+                <Plus className="h-4 w-4" />
+                {t.invoices.new}
+              </Link>
+            )}
+          </div>
         }
       />
       <Table>

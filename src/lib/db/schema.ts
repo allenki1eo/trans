@@ -73,6 +73,8 @@ export const shipments = sqliteTable(
     status: text("status", { enum: SHIPMENT_STATUSES }).notNull().default("pending"),
     // All money is whole TZS — no fractional shillings in practice.
     price: real("price").notNull().default(0),
+    // Optional trip distance; powers cost-per-km on the dashboard.
+    distanceKm: real("distance_km"),
     createdBy: text("created_by")
       .notNull()
       .references(() => profiles.id),
@@ -178,7 +180,27 @@ export const payments = sqliteTable(
   })
 );
 
+// Append-only trail of financial edits (expenses, invoices, payments).
+export const auditLogs = sqliteTable(
+  "audit_logs",
+  {
+    id: id(),
+    actorId: text("actor_id")
+      .notNull()
+      .references(() => profiles.id),
+    action: text("action").notNull(), // e.g. 'expense.create', 'invoice.status'
+    entity: text("entity").notNull(), // 'expense' | 'invoice' | 'payment'
+    entityId: text("entity_id").notNull(),
+    details: text("details"), // JSON snapshot of what changed
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    createdIdx: index("audit_logs_created_idx").on(t.createdAt),
+  })
+);
+
 export type Profile = typeof profiles.$inferSelect;
+export type AuditLog = typeof auditLogs.$inferSelect;
 export type Vehicle = typeof vehicles.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type Shipment = typeof shipments.$inferSelect;

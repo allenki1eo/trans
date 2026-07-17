@@ -8,6 +8,13 @@
       "when": 1784110611820,
       "tag": "0000_talented_otto_octavius",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1784306839458,
+      "tag": "0001_living_harrier",
+      "breakpoints": true
     }
   ]
 }

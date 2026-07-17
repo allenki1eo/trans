@@ -57,8 +57,8 @@ enum owner/dispatcher/driver/accountant and password hash), `vehicles`,
 **Phase 1 — Foundation** ✅ auth, profiles/roles, authz scaffolding, role-aware layout shell
 **Phase 2 — Core Operations** ✅ customers, vehicles, shipments + status tracking, driver mobile view
 **Phase 3 — Money** ✅ expense entry (driver quick-add + admin), invoice PDF export, payment logging (manual M-Pesa reference)
-**Phase 4 — Insights** ✅ profit dashboard (revenue − expenses by vehicle/customer), overdue invoice alerts; ◻ date-range filters, cost per km
-**Phase 5 — Polish** ◻ notifications (Africa's Talking), CSV/Excel export, audit log for financial edits
+**Phase 4 — Insights** ✅ profit dashboard (revenue − expenses by vehicle/customer), overdue invoice alerts, date-range filters, cost per km (vehicle performance table)
+**Phase 5 — Polish** ✅ CSV export (`/api/export/*`), audit log for financial edits (`audit_logs`, owner-only page); ◻ notifications (Africa's Talking — needs API credentials)
 ---
 ## Open Questions for Client
 1. Driver-vehicle assignment: fixed or per-trip? *(currently per-trip — see assumption above)*

@@ -21,6 +21,7 @@ type Labels = {
   goods: string;
   weight: string;
   price: string;
+  distanceKm: string;
   save: string;
   cancel: string;
   required: string;
@@ -112,7 +113,7 @@ export function ShipmentForm({
         <Input id="goodsDescription" {...register("goodsDescription")} />
         {err("goodsDescription")}
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-1.5">
           <Label htmlFor="weightOrUnits">{labels.weight}</Label>
           <Input id="weightOrUnits" {...register("weightOrUnits")} placeholder="8t / 120 boxes" />
@@ -121,6 +122,10 @@ export function ShipmentForm({
           <Label htmlFor="price">{labels.price} (TZS)</Label>
           <Input id="price" type="number" min="0" step="1" className="font-mono" {...register("price")} />
           {err("price")}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="distanceKm">{labels.distanceKm}</Label>
+          <Input id="distanceKm" type="number" min="0" step="1" className="font-mono" {...register("distanceKm")} />
         </div>
       </div>
       <div className="flex gap-2 pt-2">

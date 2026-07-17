@@ -23,6 +23,8 @@ export const PERMISSIONS = {
   "invoices.update": ["owner", "accountant"],
   "payments.create": ["owner", "accountant"],
   "reports.read": ["owner", "accountant"],
+  "export.csv": ["owner", "accountant"],
+  "audit.read": ["owner"],
   "users.manage": ["owner"],
 } as const satisfies Record<string, readonly Role[]>;
 

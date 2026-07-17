@@ -30,6 +30,7 @@ export default async function NewShipmentPage() {
           goods: t.shipments.goods,
           weight: t.shipments.weight,
           price: t.shipments.price,
+          distanceKm: t.shipments.distanceKm,
           save: t.common.save,
           cancel: t.common.cancel,
           required: t.common.required,

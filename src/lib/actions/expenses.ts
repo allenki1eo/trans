@@ -6,6 +6,7 @@ import { db } from "@/lib/db/client";
 import { expenses, tripAssignments } from "@/lib/db/schema";
 import { requireUser } from "@/lib/auth/require";
 import { can } from "@/lib/authz";
+import { logAudit } from "@/lib/audit";
 import { expenseSchema, type ExpenseInput } from "@/lib/validation";
 
 export async function createExpense(input: ExpenseInput) {
@@ -28,13 +29,21 @@ export async function createExpense(input: ExpenseInput) {
     if (!assignment) return { ok: false as const, error: "forbidden" };
   }
 
-  await db.insert(expenses).values({
+  const [created] = await db
+    .insert(expenses)
+    .values({
+      vehicleId: data.vehicleId,
+      shipmentId: data.shipmentId || null,
+      category: data.category,
+      amount: data.amount,
+      description: data.description || null,
+      recordedBy: user.id,
+    })
+    .returning();
+  await logAudit(user.id, "expense.create", "expense", created.id, {
     vehicleId: data.vehicleId,
-    shipmentId: data.shipmentId || null,
     category: data.category,
     amount: data.amount,
-    description: data.description || null,
-    recordedBy: user.id,
   });
 
   revalidatePath("/expenses");
@@ -46,7 +55,14 @@ export async function createExpense(input: ExpenseInput) {
 export async function deleteExpense(id: string) {
   const user = await requireUser();
   if (!can(user.role, "expenses.delete")) return { ok: false as const, error: "forbidden" };
+  const deleted = await db.query.expenses.findFirst({ where: eq(expenses.id, id) });
   await db.delete(expenses).where(eq(expenses.id, id));
+  if (deleted) {
+    await logAudit(user.id, "expense.delete", "expense", id, {
+      category: deleted.category,
+      amount: deleted.amount,
+    });
+  }
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
   return { ok: true as const };

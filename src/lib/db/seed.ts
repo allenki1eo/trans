@@ -109,6 +109,7 @@ async function main() {
         weightOrUnits: "8t",
         status: "in_transit",
         price: 2_500_000,
+        distanceKm: 560,
         createdBy: dispatcher.id,
       },
       {
@@ -120,6 +121,7 @@ async function main() {
         weightOrUnits: "20t",
         status: "delivered",
         price: 5_200_000,
+        distanceKm: 1130,
         createdBy: dispatcher.id,
         deliveredAt: new Date(),
       },

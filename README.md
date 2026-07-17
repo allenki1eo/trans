@@ -86,4 +86,4 @@ src/
 ## Deferred (per brief)
 
 - M-Pesa API integration (v1 logs manual references)
-- SMS/email notifications, CSV export, audit log (Phase 5)
+- SMS/email notifications via Africa's Talking (needs API credentials)

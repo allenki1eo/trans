@@ -7,6 +7,7 @@ import { db } from "@/lib/db/client";
 import { invoices, payments, shipments } from "@/lib/db/schema";
 import { requireUser } from "@/lib/auth/require";
 import { can } from "@/lib/authz";
+import { logAudit } from "@/lib/audit";
 import { invoiceSchema, paymentSchema, type InvoiceInput, type PaymentInput } from "@/lib/validation";
 
 async function nextInvoiceNumber(): Promise<string> {
@@ -43,6 +44,10 @@ export async function createInvoice(input: InvoiceInput) {
       dueDate: data.dueDate ? new Date(data.dueDate) : null,
     })
     .returning();
+  await logAudit(user.id, "invoice.create", "invoice", created.id, {
+    invoiceNumber: created.invoiceNumber,
+    amount: created.amount,
+  });
 
   revalidatePath("/invoices");
   redirect(`/invoices/${created.id}`);
@@ -55,7 +60,12 @@ export async function updateInvoiceStatus(invoiceId: string, status: string) {
   const parsed = invoiceSchema.shape.status.safeParse(status);
   if (!parsed.success) return { ok: false as const, error: "invalid" };
 
+  const before = await db.query.invoices.findFirst({ where: eq(invoices.id, invoiceId) });
   await db.update(invoices).set({ status: parsed.data }).where(eq(invoices.id, invoiceId));
+  await logAudit(user.id, "invoice.status", "invoice", invoiceId, {
+    from: before?.status,
+    to: parsed.data,
+  });
   revalidatePath("/invoices");
   revalidatePath(`/invoices/${invoiceId}`);
   revalidatePath("/dashboard");
@@ -73,12 +83,21 @@ export async function recordPayment(input: PaymentInput) {
   const invoice = await db.query.invoices.findFirst({ where: eq(invoices.id, data.invoiceId) });
   if (!invoice) return { ok: false as const, error: "invalid" };
 
-  await db.insert(payments).values({
-    invoiceId: data.invoiceId,
+  const [payment] = await db
+    .insert(payments)
+    .values({
+      invoiceId: data.invoiceId,
+      amount: data.amount,
+      method: data.method,
+      reference: data.reference || null,
+      recordedBy: user.id,
+    })
+    .returning();
+  await logAudit(user.id, "payment.create", "payment", payment.id, {
+    invoiceNumber: invoice.invoiceNumber,
     amount: data.amount,
     method: data.method,
-    reference: data.reference || null,
-    recordedBy: user.id,
+    reference: data.reference || undefined,
   });
 
   // Auto-mark paid once payments cover the invoice amount.
@@ -99,8 +118,15 @@ export async function recordPayment(input: PaymentInput) {
 export async function deleteInvoice(id: string) {
   const user = await requireUser();
   if (!can(user.role, "invoices.update")) return { ok: false as const, error: "forbidden" };
+  const deleted = await db.query.invoices.findFirst({ where: eq(invoices.id, id) });
   await db.delete(payments).where(eq(payments.invoiceId, id));
   await db.delete(invoices).where(eq(invoices.id, id));
+  if (deleted) {
+    await logAudit(user.id, "invoice.delete", "invoice", id, {
+      invoiceNumber: deleted.invoiceNumber,
+      amount: deleted.amount,
+    });
+  }
   revalidatePath("/invoices");
   return { ok: true as const };
 }

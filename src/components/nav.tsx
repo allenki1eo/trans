@@ -8,6 +8,7 @@ import {
   LogOut,
   Receipt,
   Route,
+  ScrollText,
   Truck,
   Users,
   UsersRound,
@@ -27,6 +28,7 @@ type NavLabels = {
   expenses: string;
   invoices: string;
   users: string;
+  audit: string;
   myTrips: string;
   logout: string;
 };
@@ -39,6 +41,7 @@ const ICONS = {
   expenses: Wallet,
   invoices: FileText,
   users: Users,
+  audit: ScrollText,
   myTrips: Receipt,
 } as const;
 
@@ -53,6 +56,7 @@ function linksFor(role: Role): Array<{ key: keyof typeof ICONS; href: string }> 
         { key: "expenses", href: "/expenses" },
         { key: "invoices", href: "/invoices" },
         { key: "users", href: "/users" },
+        { key: "audit", href: "/audit" },
       ];
     case "dispatcher":
       return [

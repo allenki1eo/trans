@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { desc, eq, ne, sql } from "drizzle-orm";
+import { and, eq, gte, ne, sql, type SQL } from "drizzle-orm";
 import { AlertTriangle } from "lucide-react";
 import { db } from "@/lib/db/client";
 import { customers, expenses, invoices, payments, shipments, vehicles } from "@/lib/db/schema";
@@ -7,27 +7,60 @@ import { requireRole } from "@/lib/auth/require";
 import { listShipments } from "@/lib/queries/shipments";
 import { getT } from "@/lib/i18n/locale";
 import { formatDate, formatTZS } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { ShipmentStatusBadge } from "@/components/status-badge";
 import { ProfitByCustomerChart, RevenueExpensesChart } from "./charts";
 
-export default async function DashboardPage() {
+const RANGES = ["30d", "90d", "year", "all"] as const;
+type Range = (typeof RANGES)[number];
+
+function cutoffFor(range: Range): Date | null {
+  const now = Date.now();
+  switch (range) {
+    case "30d":
+      return new Date(now - 30 * 24 * 3600 * 1000);
+    case "90d":
+      return new Date(now - 90 * 24 * 3600 * 1000);
+    case "year":
+      return new Date(new Date().getFullYear(), 0, 1);
+    case "all":
+      return null;
+  }
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: { range?: string };
+}) {
   await requireRole("owner", "accountant");
   const t = getT();
 
-  const [revenueByVehicle, expensesByVehicle, revenueByCustomer, costByCustomer, unpaidRow, overdueRow, recent] =
+  const range: Range = RANGES.includes(searchParams.range as Range)
+    ? (searchParams.range as Range)
+    : "all";
+  const cutoff = cutoffFor(range);
+
+  const shipmentConds: SQL[] = [ne(shipments.status, "cancelled")];
+  if (cutoff) shipmentConds.push(gte(shipments.createdAt, cutoff));
+  const expenseConds: SQL[] = [];
+  if (cutoff) expenseConds.push(gte(expenses.createdAt, cutoff));
+
+  const [vehicleStats, expensesByVehicle, revenueByCustomer, costByCustomer, unpaidRow, overdueRow, recent] =
     await Promise.all([
       db
         .select({
           vehicleId: vehicles.id,
           plate: vehicles.plateNumber,
           revenue: sql<number>`coalesce(sum(${shipments.price}), 0)`,
+          distanceKm: sql<number>`coalesce(sum(${shipments.distanceKm}), 0)`,
         })
         .from(shipments)
         .innerJoin(vehicles, eq(shipments.vehicleId, vehicles.id))
-        .where(ne(shipments.status, "cancelled"))
+        .where(and(...shipmentConds))
         .groupBy(vehicles.id, vehicles.plateNumber),
       db
         .select({
@@ -37,6 +70,7 @@ export default async function DashboardPage() {
         })
         .from(expenses)
         .innerJoin(vehicles, eq(expenses.vehicleId, vehicles.id))
+        .where(expenseConds.length ? and(...expenseConds) : undefined)
         .groupBy(expenses.vehicleId, vehicles.plateNumber),
       db
         .select({
@@ -46,7 +80,7 @@ export default async function DashboardPage() {
         })
         .from(shipments)
         .innerJoin(customers, eq(shipments.customerId, customers.id))
-        .where(ne(shipments.status, "cancelled"))
+        .where(and(...shipmentConds))
         .groupBy(shipments.customerId, customers.name),
       // Trip-linked expenses attributed back to the shipment's customer.
       db
@@ -56,6 +90,7 @@ export default async function DashboardPage() {
         })
         .from(expenses)
         .innerJoin(shipments, eq(expenses.shipmentId, shipments.id))
+        .where(expenseConds.length ? and(...expenseConds) : undefined)
         .groupBy(shipments.customerId),
       db
         .select({
@@ -72,22 +107,36 @@ export default async function DashboardPage() {
       listShipments(),
     ]);
 
-  const totalRevenue = revenueByVehicle.reduce((sum, r) => sum + r.revenue, 0);
+  const totalRevenue = vehicleStats.reduce((sum, r) => sum + r.revenue, 0);
   const totalExpenses = expensesByVehicle.reduce((sum, r) => sum + r.total, 0);
   const profit = totalRevenue - totalExpenses;
   const overdueCount = overdueRow[0]?.count ?? 0;
 
   const expensesByVehicleId = new Map(expensesByVehicle.map((r) => [r.vehicleId, r]));
-  const vehicleChartData = revenueByVehicle.map((r) => ({
+  const vehicleChartData = vehicleStats.map((r) => ({
     name: r.plate,
     revenue: r.revenue,
     expenses: expensesByVehicleId.get(r.vehicleId)?.total ?? 0,
   }));
   for (const e of expensesByVehicle) {
-    if (!revenueByVehicle.some((r) => r.vehicleId === e.vehicleId)) {
+    if (!vehicleStats.some((r) => r.vehicleId === e.vehicleId)) {
       vehicleChartData.push({ name: e.plate, revenue: 0, expenses: e.total });
     }
   }
+
+  const vehiclePerformance = vehicleStats
+    .map((r) => {
+      const cost = expensesByVehicleId.get(r.vehicleId)?.total ?? 0;
+      return {
+        plate: r.plate,
+        revenue: r.revenue,
+        expenses: cost,
+        profit: r.revenue - cost,
+        distanceKm: r.distanceKm,
+        costPerKm: r.distanceKm > 0 ? cost / r.distanceKm : null,
+      };
+    })
+    .sort((a, b) => b.profit - a.profit);
 
   const costByCustomerId = new Map(costByCustomer.map((c) => [c.customerId, c.cost]));
   const customerChartData = revenueByCustomer
@@ -95,7 +144,14 @@ export default async function DashboardPage() {
     .sort((a, b) => b.profit - a.profit)
     .slice(0, 8);
 
-  const stats = [
+  const rangeLabels: Record<Range, string> = {
+    "30d": t.dashboard.last30Days,
+    "90d": t.dashboard.last90Days,
+    year: t.dashboard.thisYear,
+    all: t.dashboard.allTime,
+  };
+
+  const stats: Array<{ label: string; value: string; tone: string; caption?: string }> = [
     { label: t.dashboard.revenue, value: formatTZS(totalRevenue), tone: "text-foreground" },
     { label: t.dashboard.expenses, value: formatTZS(totalExpenses), tone: "text-foreground" },
     {
@@ -107,12 +163,33 @@ export default async function DashboardPage() {
       label: t.dashboard.unpaidInvoices,
       value: formatTZS(Math.max(unpaidRow[0]?.unpaid ?? 0, 0)),
       tone: "text-foreground",
+      caption: t.dashboard.allTime, // receivables are a live balance, not range-scoped
     },
   ];
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t.dashboard.title} />
+      <PageHeader
+        title={t.dashboard.title}
+        action={
+          <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-0.5">
+            {RANGES.map((r) => (
+              <Link
+                key={r}
+                href={r === "all" ? "/dashboard" : `/dashboard?range=${r}`}
+                className={cn(
+                  "rounded px-3 py-1.5 text-xs font-semibold transition-colors",
+                  range === r
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted hover:text-foreground"
+                )}
+              >
+                {rangeLabels[r]}
+              </Link>
+            ))}
+          </div>
+        }
+      />
 
       {overdueCount > 0 && (
         <Link
@@ -130,7 +207,7 @@ export default async function DashboardPage() {
             <CardContent className="p-5">
               <p className="text-sm text-muted">{s.label}</p>
               <p className={`mt-1 font-mono text-2xl font-bold ${s.tone}`}>{s.value}</p>
-              <p className="mt-1 text-xs text-muted">{t.dashboard.allTime}</p>
+              <p className="mt-1 text-xs text-muted">{s.caption ?? rangeLabels[range]}</p>
             </CardContent>
           </Card>
         ))}
@@ -157,6 +234,56 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t.dashboard.vehiclePerformance}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <THead>
+              <TR>
+                <TH>{t.shipments.vehicle}</TH>
+                <TH className="text-right">{t.dashboard.revenue}</TH>
+                <TH className="text-right">{t.dashboard.expenses}</TH>
+                <TH className="text-right">{t.dashboard.profit}</TH>
+                <TH className="text-right">{t.dashboard.distance} (km)</TH>
+                <TH className="text-right">{t.dashboard.costPerKm}</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {vehiclePerformance.length === 0 && (
+                <TR>
+                  <TD colSpan={6} className="py-6 text-center text-muted">
+                    {t.common.noResults}
+                  </TD>
+                </TR>
+              )}
+              {vehiclePerformance.map((v) => (
+                <TR key={v.plate}>
+                  <TD className="font-mono font-medium">{v.plate}</TD>
+                  <TD className="text-right font-mono">{formatTZS(v.revenue)}</TD>
+                  <TD className="text-right font-mono">{formatTZS(v.expenses)}</TD>
+                  <TD
+                    className={cn(
+                      "text-right font-mono font-semibold",
+                      v.profit >= 0 ? "text-accent" : "text-danger"
+                    )}
+                  >
+                    {formatTZS(v.profit)}
+                  </TD>
+                  <TD className="text-right font-mono">
+                    {v.distanceKm > 0 ? v.distanceKm.toLocaleString("en-US") : "—"}
+                  </TD>
+                  <TD className="text-right font-mono">
+                    {v.costPerKm !== null ? formatTZS(v.costPerKm) : "—"}
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

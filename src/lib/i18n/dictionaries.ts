@@ -12,6 +12,7 @@ export const dictionaries = {
       expenses: "Expenses",
       invoices: "Invoices",
       users: "Users",
+      audit: "Audit Log",
       myTrips: "My Trips",
       logout: "Log out",
     },
@@ -44,6 +45,7 @@ export const dictionaries = {
       confirmDelete: "Are you sure you want to delete this?",
       required: "This field is required",
       back: "Back",
+      exportCsv: "Export CSV",
     },
     dashboard: {
       title: "Profit Overview",
@@ -56,7 +58,12 @@ export const dictionaries = {
       recentShipments: "Recent shipments",
       overdueAlert: "overdue invoice(s) need attention",
       last30Days: "Last 30 days",
+      last90Days: "Last 90 days",
+      thisYear: "This year",
       allTime: "All time",
+      vehiclePerformance: "Vehicle performance",
+      distance: "Distance",
+      costPerKm: "Cost / km",
     },
     customers: {
       title: "Customers",
@@ -84,6 +91,7 @@ export const dictionaries = {
       goods: "Goods",
       weight: "Weight / units",
       price: "Price",
+      distanceKm: "Distance (km)",
       markDelivered: "Mark delivered",
       markInTransit: "Start trip",
       statuses: {
@@ -144,6 +152,13 @@ export const dictionaries = {
       addExpense: "Add expense for this trip",
       myVehicle: "Vehicle",
     },
+    audit: {
+      title: "Audit Log",
+      action: "Action",
+      entity: "Record",
+      actor: "By",
+      details: "Details",
+    },
   },
   sw: {
     appName: "TransTrack",
@@ -155,6 +170,7 @@ export const dictionaries = {
       expenses: "Matumizi",
       invoices: "Ankara",
       users: "Watumiaji",
+      audit: "Kumbukumbu",
       myTrips: "Safari Zangu",
       logout: "Toka",
     },
@@ -187,6 +203,7 @@ export const dictionaries = {
       confirmDelete: "Una uhakika unataka kufuta?",
       required: "Sehemu hii inahitajika",
       back: "Rudi",
+      exportCsv: "Pakua CSV",
     },
     dashboard: {
       title: "Muhtasari wa Faida",
@@ -199,7 +216,12 @@ export const dictionaries = {
       recentShipments: "Mizigo ya hivi karibuni",
       overdueAlert: "ankara zilizochelewa zinahitaji umakini",
       last30Days: "Siku 30 zilizopita",
+      last90Days: "Siku 90 zilizopita",
+      thisYear: "Mwaka huu",
       allTime: "Muda wote",
+      vehiclePerformance: "Utendaji wa magari",
+      distance: "Umbali",
+      costPerKm: "Gharama kwa km",
     },
     customers: {
       title: "Wateja",
@@ -227,6 +249,7 @@ export const dictionaries = {
       goods: "Bidhaa",
       weight: "Uzito / idadi",
       price: "Bei",
+      distanceKm: "Umbali (km)",
       markDelivered: "Imefika",
       markInTransit: "Anza safari",
       statuses: {
@@ -286,6 +309,13 @@ export const dictionaries = {
       noTrips: "Hakuna safari ulizopangiwa",
       addExpense: "Ongeza matumizi ya safari hii",
       myVehicle: "Gari",
+    },
+    audit: {
+      title: "Kumbukumbu za Mabadiliko",
+      action: "Kitendo",
+      entity: "Rekodi",
+      actor: "Na",
+      details: "Maelezo",
     },
   },
 } as const;
