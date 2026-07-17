@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import bcrypt from "bcryptjs";
@@ -18,6 +19,14 @@ async function main() {
     authToken: process.env.TURSO_AUTH_TOKEN || undefined,
   });
   const db = drizzle(client);
+
+  const existing = await db.select({ email: profiles.email, role: profiles.role }).from(profiles);
+  if (existing.length > 0) {
+    console.log("Database already has users — skipping seed. Existing accounts:");
+    for (const u of existing) console.log(`  ${u.email} (${u.role})`);
+    client.close();
+    return;
+  }
 
   const password = await bcrypt.hash("password123", 10);
 
