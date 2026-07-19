@@ -7,7 +7,9 @@ import { formatDate } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShipmentStatusBadge } from "@/components/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { MarkReceived } from "@/components/mark-received";
 import { StatusButtons } from "./status-buttons";
 
 export default async function DriverTripsPage() {
@@ -55,6 +57,28 @@ export default async function DriverTripsPage() {
                   markDelivered: t.shipments.markDelivered,
                 }}
               />
+              {s.status !== "cancelled" &&
+                (s.receivedAt ? (
+                  <div className="flex items-center gap-2">
+                    <Badge tone="green">{t.shipments.received}</Badge>
+                    <span className="text-xs text-muted">
+                      {t.shipments.receivedByOn} {s.receivedBy} · {formatDate(s.receivedAt)}
+                    </span>
+                  </div>
+                ) : (
+                  s.status === "delivered" && (
+                    <MarkReceived
+                      shipmentId={s.id}
+                      size="lg"
+                      className="w-full"
+                      labels={{
+                        markReceived: t.shipments.markReceived,
+                        receiverName: t.shipments.receiverName,
+                        save: t.common.save,
+                      }}
+                    />
+                  )
+                ))}
               {s.status !== "cancelled" && (
                 <Link
                   href={`/driver/expenses?shipment=${s.id}`}

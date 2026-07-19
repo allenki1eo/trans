@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Plus, Route, Search } from "lucide-react";
 import { requireRole } from "@/lib/auth/require";
 import { can } from "@/lib/authz";
-import { listShipments } from "@/lib/queries/shipments";
+import { listShipments, paymentStateOf, type PaymentState } from "@/lib/queries/shipments";
 import { deleteShipment } from "@/lib/actions/shipments";
 import { getT } from "@/lib/i18n/locale";
 import { formatDate, formatTZS } from "@/lib/format";
@@ -15,6 +15,15 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { ShipmentStatusBadge } from "@/components/status-badge";
 import { DeleteButton } from "@/components/delete-button";
 import { EmptyState } from "@/components/empty-state";
+import { MarkReceived } from "@/components/mark-received";
+import { Badge, type BadgeTone } from "@/components/ui/badge";
+
+const PAYMENT_TONES: Record<PaymentState, BadgeTone> = {
+  paid: "green",
+  partial: "amber",
+  unpaid: "red",
+  no_invoice: "neutral",
+};
 
 export default async function ShipmentsPage({
   searchParams,
@@ -86,6 +95,8 @@ export default async function ShipmentsPage({
             <TH>{t.shipments.vehicle}</TH>
             <TH>{t.shipments.driver}</TH>
             <TH>{t.common.status}</TH>
+            <TH>{t.shipments.received}</TH>
+            <TH>{t.shipments.payment}</TH>
             <TH className="text-right">{t.shipments.price}</TH>
             <TH>{t.common.date}</TH>
             {canWrite && <TH className="text-right">{t.common.actions}</TH>}
@@ -94,12 +105,15 @@ export default async function ShipmentsPage({
         <TBody>
           {rows.length === 0 && (
             <TR>
-              <TD colSpan={10}>
+              <TD colSpan={12}>
                 <EmptyState icon={Route} message={t.common.noResults} />
               </TD>
             </TR>
           )}
-          {rows.map(({ shipment: s, customerName, plateNumber, driverName }) => (
+          {rows.map((row) => {
+            const { shipment: s, customerName, plateNumber, driverName } = row;
+            const payState = paymentStateOf(row);
+            return (
             <TR key={s.id}>
               <TD className="font-medium">{customerName}</TD>
               <TD className="text-muted">{s.origin}</TD>
@@ -109,6 +123,32 @@ export default async function ShipmentsPage({
               <TD className="text-muted">{driverName ?? "—"}</TD>
               <TD>
                 <ShipmentStatusBadge status={s.status} label={t.shipments.statuses[s.status]} />
+              </TD>
+              <TD>
+                {s.receivedAt ? (
+                  <div>
+                    <Badge tone="green">{t.shipments.received}</Badge>
+                    <p className="mt-1 text-xs text-muted">
+                      {s.receivedBy} · {formatDate(s.receivedAt)}
+                    </p>
+                  </div>
+                ) : s.status === "delivered" && canWrite ? (
+                  <MarkReceived
+                    shipmentId={s.id}
+                    labels={{
+                      markReceived: t.shipments.markReceived,
+                      receiverName: t.shipments.receiverName,
+                      save: t.common.save,
+                    }}
+                  />
+                ) : s.status === "cancelled" ? (
+                  <span className="text-muted">—</span>
+                ) : (
+                  <Badge tone="neutral">{t.shipments.notReceived}</Badge>
+                )}
+              </TD>
+              <TD>
+                <Badge tone={PAYMENT_TONES[payState]}>{t.shipments.paymentStates[payState]}</Badge>
               </TD>
               <TD className="text-right font-mono">{formatTZS(s.price)}</TD>
               <TD className="text-muted">{formatDate(s.createdAt)}</TD>
@@ -132,7 +172,8 @@ export default async function ShipmentsPage({
                 </TD>
               )}
             </TR>
-          ))}
+            );
+          })}
         </TBody>
       </Table>
     </div>

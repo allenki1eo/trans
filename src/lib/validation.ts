@@ -41,6 +41,11 @@ export const shipmentStatusSchema = z.object({
   status: z.enum(SHIPMENT_STATUSES),
 });
 
+export const shipmentReceivedSchema = z.object({
+  shipmentId: z.string().min(1),
+  receivedBy: z.string().trim().min(1),
+});
+
 export const expenseSchema = z.object({
   vehicleId: z.string().min(1),
   shipmentId: z.string().optional().or(z.literal("")),

@@ -1,9 +1,11 @@
 import "server-only";
-import { and, desc, eq, like, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { db } from "@/lib/db/client";
 import {
   customers,
+  invoices,
+  payments,
   profiles,
   shipments,
   tripAssignments,
@@ -20,6 +22,8 @@ const baseSelect = {
   plateNumber: vehicles.plateNumber,
   driverId: tripAssignments.driverId,
   driverName: driverProfile.fullName,
+  invoicedAmount: sql<number>`coalesce((select sum(${invoices.amount}) from ${invoices} where ${invoices.shipmentId} = ${shipments.id}), 0)`,
+  paidAmount: sql<number>`coalesce((select sum(${payments.amount}) from ${payments} join ${invoices} on ${payments.invoiceId} = ${invoices.id} where ${invoices.shipmentId} = ${shipments.id}), 0)`,
 };
 
 export type ShipmentRow = {
@@ -28,7 +32,18 @@ export type ShipmentRow = {
   plateNumber: string | null;
   driverId: string | null;
   driverName: string | null;
+  invoicedAmount: number;
+  paidAmount: number;
 };
+
+export type PaymentState = "paid" | "partial" | "unpaid" | "no_invoice";
+
+export function paymentStateOf(row: Pick<ShipmentRow, "invoicedAmount" | "paidAmount">): PaymentState {
+  if (row.invoicedAmount <= 0) return "no_invoice";
+  if (row.paidAmount >= row.invoicedAmount) return "paid";
+  if (row.paidAmount > 0) return "partial";
+  return "unpaid";
+}
 
 export type ShipmentFilters = { status?: string; q?: string };
 

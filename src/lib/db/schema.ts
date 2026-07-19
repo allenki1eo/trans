@@ -80,6 +80,9 @@ export const shipments = sqliteTable(
       .references(() => profiles.id),
     createdAt: createdAt(),
     deliveredAt: integer("delivered_at", { mode: "timestamp" }),
+    // Proof of handover: who received the goods at the destination, and when.
+    receivedAt: integer("received_at", { mode: "timestamp" }),
+    receivedBy: text("received_by"),
   },
   (t) => ({
     statusIdx: index("shipments_status_idx").on(t.status),
