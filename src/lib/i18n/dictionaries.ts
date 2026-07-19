@@ -15,6 +15,9 @@ export const dictionaries = {
       audit: "Audit Log",
       myTrips: "My Trips",
       logout: "Log out",
+      sectionOperations: "Operations",
+      sectionFinance: "Finance",
+      sectionAdmin: "Administration",
     },
     auth: {
       login: "Log in",
@@ -22,6 +25,7 @@ export const dictionaries = {
       password: "Password",
       invalidCredentials: "Invalid email or password",
       welcome: "Sign in to your account",
+      tagline: "Fleet, shipments and money — one source of truth.",
     },
     common: {
       save: "Save",
@@ -46,6 +50,9 @@ export const dictionaries = {
       required: "This field is required",
       back: "Back",
       exportCsv: "Export CSV",
+      view: "View",
+      all: "All",
+      searchPlaceholder: "Search…",
     },
     dashboard: {
       title: "Profit Overview",
@@ -64,11 +71,16 @@ export const dictionaries = {
       vehiclePerformance: "Vehicle performance",
       distance: "Distance",
       costPerKm: "Cost / km",
+      monthlyTrend: "Revenue & expenses by month",
+      activity: "Recent activity",
     },
     customers: {
       title: "Customers",
       new: "New customer",
       edit: "Edit customer",
+      details: "Customer details",
+      totalRevenue: "Total revenue",
+      unpaid: "Unpaid",
     },
     vehicles: {
       title: "Vehicles",
@@ -78,6 +90,7 @@ export const dictionaries = {
       makeModel: "Make / model",
       capacity: "Capacity",
       statuses: { active: "Active", maintenance: "In maintenance", retired: "Retired" },
+      details: "Vehicle details",
     },
     shipments: {
       title: "Shipments",
@@ -173,6 +186,9 @@ export const dictionaries = {
       audit: "Kumbukumbu",
       myTrips: "Safari Zangu",
       logout: "Toka",
+      sectionOperations: "Uendeshaji",
+      sectionFinance: "Fedha",
+      sectionAdmin: "Utawala",
     },
     auth: {
       login: "Ingia",
@@ -180,6 +196,7 @@ export const dictionaries = {
       password: "Nenosiri",
       invalidCredentials: "Barua pepe au nenosiri si sahihi",
       welcome: "Ingia kwenye akaunti yako",
+      tagline: "Magari, mizigo na fedha — chanzo kimoja cha ukweli.",
     },
     common: {
       save: "Hifadhi",
@@ -204,6 +221,9 @@ export const dictionaries = {
       required: "Sehemu hii inahitajika",
       back: "Rudi",
       exportCsv: "Pakua CSV",
+      view: "Angalia",
+      all: "Zote",
+      searchPlaceholder: "Tafuta…",
     },
     dashboard: {
       title: "Muhtasari wa Faida",
@@ -222,11 +242,16 @@ export const dictionaries = {
       vehiclePerformance: "Utendaji wa magari",
       distance: "Umbali",
       costPerKm: "Gharama kwa km",
+      monthlyTrend: "Mapato na matumizi kwa mwezi",
+      activity: "Shughuli za hivi karibuni",
     },
     customers: {
       title: "Wateja",
       new: "Mteja mpya",
       edit: "Hariri mteja",
+      details: "Taarifa za mteja",
+      totalRevenue: "Jumla ya mapato",
+      unpaid: "Haijalipwa",
     },
     vehicles: {
       title: "Magari",
@@ -236,6 +261,7 @@ export const dictionaries = {
       makeModel: "Aina / modeli",
       capacity: "Uwezo",
       statuses: { active: "Linafanya kazi", maintenance: "Matengenezoni", retired: "Limestaafishwa" },
+      details: "Taarifa za gari",
     },
     shipments: {
       title: "Mizigo",

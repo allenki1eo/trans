@@ -54,7 +54,11 @@ export default async function VehiclesPage() {
           )}
           {rows.map((v) => (
             <TR key={v.id}>
-              <TD className="font-mono font-medium">{v.plateNumber}</TD>
+              <TD>
+                <Link href={`/vehicles/${v.id}`} className="font-mono font-medium text-accent hover:underline">
+                  {v.plateNumber}
+                </Link>
+              </TD>
               <TD>{v.makeModel}</TD>
               <TD className="text-muted">{v.capacity ?? "—"}</TD>
               <TD>

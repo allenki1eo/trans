@@ -1,22 +1,38 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Route, Search } from "lucide-react";
 import { requireRole } from "@/lib/auth/require";
 import { can } from "@/lib/authz";
 import { listShipments } from "@/lib/queries/shipments";
 import { deleteShipment } from "@/lib/actions/shipments";
 import { getT } from "@/lib/i18n/locale";
 import { formatDate, formatTZS } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { SHIPMENT_STATUSES } from "@/lib/db/schema";
 import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { ShipmentStatusBadge } from "@/components/status-badge";
 import { DeleteButton } from "@/components/delete-button";
+import { EmptyState } from "@/components/empty-state";
 
-export default async function ShipmentsPage() {
+export default async function ShipmentsPage({
+  searchParams,
+}: {
+  searchParams: { status?: string; q?: string };
+}) {
   const user = await requireRole("owner", "dispatcher", "accountant");
   const t = getT();
-  const rows = await listShipments();
+  const rows = await listShipments({ status: searchParams.status, q: searchParams.q });
   const canWrite = can(user.role, "shipments.write");
+
+  const chipHref = (status?: string) => {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (searchParams.q) params.set("q", searchParams.q);
+    const qs = params.toString();
+    return qs ? `/shipments?${qs}` : "/shipments";
+  };
 
   return (
     <div>
@@ -31,6 +47,35 @@ export default async function ShipmentsPage() {
           )
         }
       />
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {[undefined, ...SHIPMENT_STATUSES].map((s) => (
+            <Link
+              key={s ?? "all"}
+              href={chipHref(s)}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                (searchParams.status ?? undefined) === s
+                  ? "border-accent/40 bg-accent/10 text-accent"
+                  : "border-border text-muted hover:text-foreground"
+              )}
+            >
+              {s ? t.shipments.statuses[s] : t.common.all}
+            </Link>
+          ))}
+        </div>
+        <form method="GET" className="relative ml-auto w-full sm:w-64">
+          {searchParams.status && <input type="hidden" name="status" value={searchParams.status} />}
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <Input
+            name="q"
+            defaultValue={searchParams.q ?? ""}
+            placeholder={t.common.searchPlaceholder}
+            className="h-9 pl-9"
+          />
+        </form>
+      </div>
       <Table>
         <THead>
           <TR>
@@ -49,8 +94,8 @@ export default async function ShipmentsPage() {
         <TBody>
           {rows.length === 0 && (
             <TR>
-              <TD colSpan={10} className="py-8 text-center text-muted">
-                {t.common.noResults}
+              <TD colSpan={10}>
+                <EmptyState icon={Route} message={t.common.noResults} />
               </TD>
             </TR>
           )}

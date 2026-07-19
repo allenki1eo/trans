@@ -5,6 +5,13 @@
 @layer base {
   body {
     @apply bg-background text-foreground antialiased;
+    background-image: radial-gradient(
+        900px 400px at 85% -10%,
+        hsl(42 88% 55% / 0.05),
+        transparent
+      ),
+      radial-gradient(700px 500px at -10% 110%, hsl(210 80% 60% / 0.04), transparent);
+    background-attachment: fixed;
   }
   ::selection {
     @apply bg-accent/30;

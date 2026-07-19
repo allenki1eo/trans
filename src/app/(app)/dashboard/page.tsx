@@ -1,18 +1,28 @@
 import Link from "next/link";
-import { and, eq, gte, ne, sql, type SQL } from "drizzle-orm";
-import { AlertTriangle } from "lucide-react";
+import { and, desc, eq, gte, ne, sql, type SQL } from "drizzle-orm";
+import { AlertTriangle, FileText, TrendingUp, Wallet, Coins } from "lucide-react";
 import { db } from "@/lib/db/client";
-import { customers, expenses, invoices, payments, shipments, vehicles } from "@/lib/db/schema";
+import {
+  auditLogs,
+  customers,
+  expenses,
+  invoices,
+  payments,
+  profiles,
+  shipments,
+  vehicles,
+} from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/require";
 import { listShipments } from "@/lib/queries/shipments";
 import { getT } from "@/lib/i18n/locale";
-import { formatDate, formatTZS } from "@/lib/format";
+import { formatDate, formatDateTime, formatTZS } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { ShipmentStatusBadge } from "@/components/status-badge";
-import { ProfitByCustomerChart, RevenueExpensesChart } from "./charts";
+import { MonthlyTrendChart, ProfitByCustomerChart, RevenueExpensesChart } from "./charts";
 
 const RANGES = ["30d", "90d", "year", "all"] as const;
 type Range = (typeof RANGES)[number];
@@ -49,7 +59,21 @@ export default async function DashboardPage({
   const expenseConds: SQL[] = [];
   if (cutoff) expenseConds.push(gte(expenses.createdAt, cutoff));
 
-  const [vehicleStats, expensesByVehicle, revenueByCustomer, costByCustomer, unpaidRow, overdueRow, recent] =
+  const monthExpr = sql<string>`strftime('%Y-%m', ${shipments.createdAt}, 'unixepoch')`;
+  const expenseMonthExpr = sql<string>`strftime('%Y-%m', ${expenses.createdAt}, 'unixepoch')`;
+
+  const [
+    vehicleStats,
+    expensesByVehicle,
+    revenueByCustomer,
+    costByCustomer,
+    unpaidRow,
+    overdueRow,
+    recent,
+    revenueByMonth,
+    expensesByMonth,
+    activity,
+  ] =
     await Promise.all([
       db
         .select({
@@ -105,6 +129,23 @@ export default async function DashboardPage({
           sql`${invoices.status} != 'paid' and ${invoices.dueDate} is not null and ${invoices.dueDate} < unixepoch()`
         ),
       listShipments(),
+      db
+        .select({ month: monthExpr, revenue: sql<number>`coalesce(sum(${shipments.price}), 0)` })
+        .from(shipments)
+        .where(ne(shipments.status, "cancelled"))
+        .groupBy(monthExpr)
+        .orderBy(monthExpr),
+      db
+        .select({ month: expenseMonthExpr, total: sql<number>`coalesce(sum(${expenses.amount}), 0)` })
+        .from(expenses)
+        .groupBy(expenseMonthExpr)
+        .orderBy(expenseMonthExpr),
+      db
+        .select({ log: auditLogs, actorName: profiles.fullName })
+        .from(auditLogs)
+        .innerJoin(profiles, eq(auditLogs.actorId, profiles.id))
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(6),
     ]);
 
   const totalRevenue = vehicleStats.reduce((sum, r) => sum + r.revenue, 0);
@@ -144,6 +185,20 @@ export default async function DashboardPage({
     .sort((a, b) => b.profit - a.profit)
     .slice(0, 8);
 
+  // Merge the last 6 calendar months of revenue + expenses for the trend.
+  const monthSet = Array.from(
+    new Set([...revenueByMonth.map((r) => r.month), ...expensesByMonth.map((e) => e.month)])
+  )
+    .sort()
+    .slice(-6);
+  const revenueMonthMap = new Map(revenueByMonth.map((r) => [r.month, r.revenue]));
+  const expenseMonthMap = new Map(expensesByMonth.map((e) => [e.month, e.total]));
+  const trendData = monthSet.map((m) => ({
+    month: m,
+    revenue: revenueMonthMap.get(m) ?? 0,
+    expenses: expenseMonthMap.get(m) ?? 0,
+  }));
+
   const rangeLabels: Record<Range, string> = {
     "30d": t.dashboard.last30Days,
     "90d": t.dashboard.last90Days,
@@ -151,19 +206,29 @@ export default async function DashboardPage({
     all: t.dashboard.allTime,
   };
 
-  const stats: Array<{ label: string; value: string; tone: string; caption?: string }> = [
-    { label: t.dashboard.revenue, value: formatTZS(totalRevenue), tone: "text-foreground" },
-    { label: t.dashboard.expenses, value: formatTZS(totalExpenses), tone: "text-foreground" },
+  const stats: Array<{
+    label: string;
+    value: string;
+    tone: string;
+    caption?: string;
+    icon: typeof TrendingUp;
+    highlight?: boolean;
+  }> = [
+    { label: t.dashboard.revenue, value: formatTZS(totalRevenue), tone: "text-foreground", icon: TrendingUp },
+    { label: t.dashboard.expenses, value: formatTZS(totalExpenses), tone: "text-foreground", icon: Wallet },
     {
       label: t.dashboard.profit,
       value: formatTZS(profit),
       tone: profit >= 0 ? "text-accent" : "text-danger",
+      icon: Coins,
+      highlight: true,
     },
     {
       label: t.dashboard.unpaidInvoices,
       value: formatTZS(Math.max(unpaidRow[0]?.unpaid ?? 0, 0)),
       tone: "text-foreground",
       caption: t.dashboard.allTime, // receivables are a live balance, not range-scoped
+      icon: FileText,
     },
   ];
 
@@ -202,15 +267,87 @@ export default async function DashboardPage({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-5">
-              <p className="text-sm text-muted">{s.label}</p>
-              <p className={`mt-1 font-mono text-2xl font-bold ${s.tone}`}>{s.value}</p>
-              <p className="mt-1 text-xs text-muted">{s.caption ?? rangeLabels[range]}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {stats.map((s) => {
+          const Icon = s.icon;
+          return (
+            <Card
+              key={s.label}
+              className={cn(
+                s.highlight &&
+                  "border-accent/30 bg-gradient-to-br from-accent/10 via-surface to-surface"
+              )}
+            >
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <p className="text-sm text-muted">{s.label}</p>
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-md",
+                      s.highlight ? "bg-accent/15 text-accent" : "bg-surface-raised text-muted"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                </div>
+                <p className={`mt-1 font-mono text-2xl font-bold ${s.tone}`}>{s.value}</p>
+                <p className="mt-1 text-xs text-muted">{s.caption ?? rangeLabels[range]}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>{t.dashboard.monthlyTrend}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MonthlyTrendChart
+              data={trendData}
+              labels={{ revenue: t.dashboard.revenue, expenses: t.dashboard.expenses }}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.dashboard.activity}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            {activity.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted">{t.common.noResults}</p>
+            )}
+            {activity.map(({ log, actorName }) => {
+              let amount: number | null = null;
+              try {
+                const d = log.details ? (JSON.parse(log.details) as { amount?: number }) : null;
+                if (d && typeof d.amount === "number") amount = d.amount;
+              } catch {}
+              return (
+                <div
+                  key={log.id}
+                  className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-surface-raised/60"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-raised text-xs font-semibold text-accent">
+                    {actorName.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm">
+                      <span className="font-medium">{actorName}</span>{" "}
+                      <Badge tone={log.action.endsWith(".delete") ? "red" : "neutral"} className="ml-1 font-mono text-[10px]">
+                        {log.action}
+                      </Badge>
+                    </p>
+                    <p className="text-xs text-muted">{formatDateTime(log.createdAt)}</p>
+                  </div>
+                  {amount !== null && (
+                    <span className="shrink-0 font-mono text-xs text-muted">{formatTZS(amount)}</span>
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
