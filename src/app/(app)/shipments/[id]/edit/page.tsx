@@ -4,7 +4,8 @@ import { db } from "@/lib/db/client";
 import { shipments, tripAssignments } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/require";
 import { getT } from "@/lib/i18n/locale";
-import { customerOptions, driverOptions, vehicleOptions } from "@/lib/queries/options";
+import { customerOptions, driverOptions, itemOptions, vehicleOptions } from "@/lib/queries/options";
+import { listItemsForShipment } from "@/lib/queries/stock";
 import { PageHeader } from "@/components/page-header";
 import { ShipmentForm } from "../../shipment-form";
 
@@ -19,10 +20,12 @@ export default async function EditShipmentPage({ params }: { params: { id: strin
     where: eq(tripAssignments.shipmentId, shipment.id),
   });
 
-  const [customers, vehicles, drivers] = await Promise.all([
+  const [customers, vehicles, drivers, items, existingItems] = await Promise.all([
     customerOptions(),
     vehicleOptions(),
     driverOptions(),
+    itemOptions(),
+    listItemsForShipment(shipment.id),
   ]);
 
   return (
@@ -40,10 +43,12 @@ export default async function EditShipmentPage({ params }: { params: { id: strin
           weightOrUnits: shipment.weightOrUnits ?? "",
           price: shipment.price,
           distanceKm: shipment.distanceKm ?? undefined,
+          items: existingItems.map((line) => ({ itemId: line.itemId, quantity: line.quantity })),
         }}
         customers={customers}
         vehicles={vehicles}
         drivers={drivers}
+        items={items}
         labels={{
           customer: t.shipments.customer,
           vehicle: t.shipments.vehicle,
@@ -57,6 +62,11 @@ export default async function EditShipmentPage({ params }: { params: { id: strin
           save: t.common.save,
           cancel: t.common.cancel,
           required: t.common.required,
+          itemsTitle: t.nav.items,
+          item: t.stock.item,
+          quantity: t.stock.quantity,
+          addLine: t.items.addLine,
+          removeLine: t.items.removeLine,
         }}
       />
     </div>

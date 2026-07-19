@@ -54,7 +54,8 @@ export function UserForm({
   return (
     <form
       onSubmit={handleSubmit(async (data) => {
-        await upsertUser(id, data);
+        const result = await upsertUser(id, data);
+        if (result.ok) router.push("/users");
       })}
       className="max-w-lg space-y-4"
     >

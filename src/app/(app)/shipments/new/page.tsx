@@ -1,16 +1,17 @@
 import { requireRole } from "@/lib/auth/require";
 import { getT } from "@/lib/i18n/locale";
-import { customerOptions, driverOptions, vehicleOptions } from "@/lib/queries/options";
+import { customerOptions, driverOptions, itemOptions, vehicleOptions } from "@/lib/queries/options";
 import { PageHeader } from "@/components/page-header";
 import { ShipmentForm } from "../shipment-form";
 
 export default async function NewShipmentPage() {
   await requireRole("owner", "dispatcher");
   const t = getT();
-  const [customers, vehicles, drivers] = await Promise.all([
+  const [customers, vehicles, drivers, items] = await Promise.all([
     customerOptions(),
     vehicleOptions(),
     driverOptions(),
+    itemOptions(),
   ]);
 
   return (
@@ -21,6 +22,7 @@ export default async function NewShipmentPage() {
         customers={customers}
         vehicles={vehicles}
         drivers={drivers}
+        items={items}
         labels={{
           customer: t.shipments.customer,
           vehicle: t.shipments.vehicle,
@@ -34,6 +36,11 @@ export default async function NewShipmentPage() {
           save: t.common.save,
           cancel: t.common.cancel,
           required: t.common.required,
+          itemsTitle: t.nav.items,
+          item: t.stock.item,
+          quantity: t.stock.quantity,
+          addLine: t.items.addLine,
+          removeLine: t.items.removeLine,
         }}
       />
     </div>

@@ -118,7 +118,11 @@ export default async function ShipmentsPage({
               <TD className="font-medium">{customerName}</TD>
               <TD className="text-muted">{s.origin}</TD>
               <TD className="text-muted">{s.destination}</TD>
-              <TD>{s.goodsDescription}</TD>
+              <TD>
+                <Link href={`/shipments/${s.id}`} className="text-accent hover:underline">
+                  {s.goodsDescription}
+                </Link>
+              </TD>
               <TD className="font-mono text-muted">{plateNumber ?? "—"}</TD>
               <TD className="text-muted">{driverName ?? "—"}</TD>
               <TD>

@@ -8,6 +8,11 @@ import {
   VEHICLE_STATUSES,
 } from "@/lib/db/schema";
 
+export const shipmentItemLineSchema = z.object({
+  itemId: z.string().min(1),
+  quantity: z.coerce.number().positive(),
+});
+
 /** Shared between React Hook Form resolvers and server-action validation. */
 
 export const customerSchema = z.object({
@@ -34,6 +39,7 @@ export const shipmentSchema = z.object({
   weightOrUnits: z.string().trim().optional().or(z.literal("")),
   price: z.coerce.number().min(0),
   distanceKm: z.coerce.number().min(0).optional(),
+  items: z.array(shipmentItemLineSchema).optional().default([]),
 });
 
 export const shipmentStatusSchema = z.object({
@@ -82,6 +88,17 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const itemSchema = z.object({
+  name: z.string().trim().min(1),
+  unit: z.string().trim().min(1),
+});
+
+export const stockMovementSchema = z.object({
+  itemId: z.string().min(1),
+  quantity: z.coerce.number().refine((v) => v !== 0, "required"),
+  note: z.string().trim().optional().or(z.literal("")),
+});
+
 export type CustomerInput = z.infer<typeof customerSchema>;
 export type VehicleInput = z.infer<typeof vehicleSchema>;
 export type ShipmentInput = z.infer<typeof shipmentSchema>;
@@ -89,3 +106,6 @@ export type ExpenseInput = z.infer<typeof expenseSchema>;
 export type InvoiceInput = z.infer<typeof invoiceSchema>;
 export type PaymentInput = z.infer<typeof paymentSchema>;
 export type UserInput = z.infer<typeof userSchema>;
+export type ItemInput = z.infer<typeof itemSchema>;
+export type StockMovementInput = z.infer<typeof stockMovementSchema>;
+export type ShipmentItemLine = z.infer<typeof shipmentItemLineSchema>;

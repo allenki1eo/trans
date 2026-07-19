@@ -1,10 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { shipments, tripAssignments } from "@/lib/db/schema";
+import { shipmentItems, shipments, tripAssignments } from "@/lib/db/schema";
 import { requireUser } from "@/lib/auth/require";
 import { can } from "@/lib/authz";
 import {
@@ -33,7 +32,11 @@ export async function upsertShipment(id: string | null, input: ShipmentInput) {
     distanceKm: data.distanceKm || null,
   };
 
+  const itemRows = data.items.filter((line) => line.itemId && line.quantity > 0);
+
+  let shipmentId: string;
   if (id) {
+    shipmentId = id;
     await db.update(shipments).set(values).where(eq(shipments.id, id));
     // Re-point the trip assignment at the (possibly new) driver/vehicle.
     await db.delete(tripAssignments).where(eq(tripAssignments.shipmentId, id));
@@ -42,20 +45,30 @@ export async function upsertShipment(id: string | null, input: ShipmentInput) {
       vehicleId: data.vehicleId,
       driverId: data.driverId,
     });
+    await db.delete(shipmentItems).where(eq(shipmentItems.shipmentId, id));
   } else {
     const [created] = await db
       .insert(shipments)
       .values({ ...values, createdBy: user.id })
       .returning();
+    shipmentId = created.id;
     await db.insert(tripAssignments).values({
       shipmentId: created.id,
       vehicleId: data.vehicleId,
       driverId: data.driverId,
     });
   }
+
+  if (itemRows.length > 0) {
+    await db
+      .insert(shipmentItems)
+      .values(itemRows.map((line) => ({ shipmentId, itemId: line.itemId, quantity: line.quantity })));
+  }
+
   revalidatePath("/shipments");
   revalidatePath("/driver");
-  redirect("/shipments");
+  revalidatePath("/stock");
+  return { ok: true as const, id: shipmentId };
 }
 
 /**
@@ -94,6 +107,7 @@ export async function updateShipmentStatus(shipmentId: string, status: string) {
   revalidatePath("/shipments");
   revalidatePath("/driver");
   revalidatePath("/dashboard");
+  revalidatePath("/stock");
   return { ok: true as const };
 }
 
@@ -148,7 +162,9 @@ export async function deleteShipment(id: string) {
   const user = await requireUser();
   if (user.role !== "owner") return { ok: false as const, error: "forbidden" };
   await db.delete(tripAssignments).where(eq(tripAssignments.shipmentId, id));
+  await db.delete(shipmentItems).where(eq(shipmentItems.shipmentId, id));
   await db.delete(shipments).where(eq(shipments.id, id));
   revalidatePath("/shipments");
+  revalidatePath("/stock");
   return { ok: true as const };
 }

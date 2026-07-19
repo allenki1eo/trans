@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { customers } from "@/lib/db/schema";
@@ -29,7 +28,7 @@ export async function upsertCustomer(id: string | null, input: CustomerInput) {
     await db.insert(customers).values(values);
   }
   revalidatePath("/customers");
-  redirect("/customers");
+  return { ok: true as const };
 }
 
 export async function deleteCustomer(id: string) {

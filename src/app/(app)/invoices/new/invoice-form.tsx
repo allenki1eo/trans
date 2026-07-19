@@ -40,7 +40,8 @@ export function InvoiceForm({
   return (
     <form
       onSubmit={handleSubmit(async (data) => {
-        await createInvoice(data);
+        const result = await createInvoice(data);
+        if (result.ok) router.push(`/invoices/${result.id}`);
       })}
       className="max-w-lg space-y-4"
     >

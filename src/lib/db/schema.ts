@@ -19,6 +19,9 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const VEHICLE_STATUSES = ["active", "maintenance", "retired"] as const;
 export type VehicleStatus = (typeof VEHICLE_STATUSES)[number];
 
+export const STOCK_MOVEMENT_TYPES = ["received", "adjustment"] as const;
+export type StockMovementType = (typeof STOCK_MOVEMENT_TYPES)[number];
+
 const id = () =>
   text("id")
     .primaryKey()
@@ -183,6 +186,62 @@ export const payments = sqliteTable(
   })
 );
 
+// Goods catalog — the set of item types the company moves (cement bags,
+// steel rods, ...). Stock levels are always derived (never stored directly)
+// from stockMovements (inbound to the depot) minus shipmentItems on
+// non-cancelled shipments (out of the depot, in custody or delivered).
+export const items = sqliteTable("items", {
+  id: id(),
+  name: text("name").notNull().unique(),
+  unit: text("unit").notNull(), // e.g. "bags", "boxes", "kg", "pcs"
+  createdAt: createdAt(),
+});
+
+// Structured line items per shipment — what's actually loaded, replacing
+// (well, supplementing — goods_description/weight_or_units stay for
+// backward compatibility with existing rows) a single free-text field.
+export const shipmentItems = sqliteTable(
+  "shipment_items",
+  {
+    id: id(),
+    shipmentId: text("shipment_id")
+      .notNull()
+      .references(() => shipments.id),
+    itemId: text("item_id")
+      .notNull()
+      .references(() => items.id),
+    quantity: real("quantity").notNull(),
+  },
+  (t) => ({
+    shipmentIdx: index("shipment_items_shipment_idx").on(t.shipmentId),
+    itemIdx: index("shipment_items_item_idx").on(t.itemId),
+  })
+);
+
+// Depot stock ledger: goods received into the depot, and manual
+// corrections (stocktake, damage/loss). Signed quantity — adjustments can
+// be negative. Depot stock for an item = sum(these) - sum(shipmentItems on
+// non-cancelled shipments for that item).
+export const stockMovements = sqliteTable(
+  "stock_movements",
+  {
+    id: id(),
+    itemId: text("item_id")
+      .notNull()
+      .references(() => items.id),
+    type: text("type", { enum: STOCK_MOVEMENT_TYPES }).notNull(),
+    quantity: real("quantity").notNull(),
+    note: text("note"),
+    recordedBy: text("recorded_by")
+      .notNull()
+      .references(() => profiles.id),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    itemIdx: index("stock_movements_item_idx").on(t.itemId),
+  })
+);
+
 // Append-only trail of financial edits (expenses, invoices, payments).
 export const auditLogs = sqliteTable(
   "audit_logs",
@@ -211,3 +270,6 @@ export type TripAssignment = typeof tripAssignments.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
+export type Item = typeof items.$inferSelect;
+export type ShipmentItem = typeof shipmentItems.$inferSelect;
+export type StockMovement = typeof stockMovements.$inferSelect;

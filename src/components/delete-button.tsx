@@ -8,10 +8,13 @@ export function DeleteButton({
   onDelete,
   confirmMessage,
   label,
+  onError,
 }: {
   onDelete: () => Promise<unknown>;
   confirmMessage: string;
   label: string;
+  /** Called when the action resolves with { ok: false, error }. */
+  onError?: (error: string) => void;
 }) {
   const [pending, startTransition] = useTransition();
   return (
@@ -24,7 +27,17 @@ export function DeleteButton({
       onClick={() => {
         if (window.confirm(confirmMessage)) {
           startTransition(async () => {
-            await onDelete();
+            const result = await onDelete();
+            if (
+              onError &&
+              result &&
+              typeof result === "object" &&
+              "ok" in result &&
+              result.ok === false &&
+              "error" in result
+            ) {
+              onError(String((result as { error: unknown }).error));
+            }
           });
         }
       }}

@@ -6,6 +6,7 @@ import { db } from "@/lib/db/client";
 import { expenses, profiles, shipments, vehicles } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/require";
 import { can } from "@/lib/authz";
+import { listCustody } from "@/lib/queries/stock";
 import { getT } from "@/lib/i18n/locale";
 import { formatDate, formatTZS } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -24,7 +25,7 @@ export default async function VehicleDetailPage({ params }: { params: { id: stri
   const vehicle = await db.query.vehicles.findFirst({ where: eq(vehicles.id, params.id) });
   if (!vehicle) notFound();
 
-  const [statsRow, expenseTotalRow, tripRows, expenseRows] = await Promise.all([
+  const [statsRow, expenseTotalRow, tripRows, expenseRows, custodyRows] = await Promise.all([
     db
       .select({
         revenue: sql<number>`coalesce(sum(${shipments.price}), 0)`,
@@ -49,6 +50,7 @@ export default async function VehicleDetailPage({ params }: { params: { id: stri
       .where(eq(expenses.vehicleId, vehicle.id))
       .orderBy(desc(expenses.createdAt))
       .limit(50),
+    listCustody(vehicle.id),
   ]);
 
   const revenue = statsRow[0]?.revenue ?? 0;
@@ -105,6 +107,40 @@ export default async function VehicleDetailPage({ params }: { params: { id: stri
           </Card>
         ))}
       </div>
+
+      {custodyRows.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.stock.custodyTitle}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <THead>
+                <TR>
+                  <TH>{t.stock.item}</TH>
+                  <TH className="text-right">{t.stock.quantity}</TH>
+                  <TH>{t.stock.trip}</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {custodyRows.map((c) => (
+                  <TR key={`${c.shipmentId}-${c.itemId}`}>
+                    <TD>{c.itemName}</TD>
+                    <TD className="text-right font-mono">
+                      {c.quantity.toLocaleString("en-US")} {c.unit}
+                    </TD>
+                    <TD>
+                      <Link href={`/shipments/${c.shipmentId}`} className="text-accent hover:underline">
+                        {c.origin} → {c.destination}
+                      </Link>
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

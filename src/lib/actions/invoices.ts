@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { invoices, payments, shipments } from "@/lib/db/schema";
@@ -50,7 +49,7 @@ export async function createInvoice(input: InvoiceInput) {
   });
 
   revalidatePath("/invoices");
-  redirect(`/invoices/${created.id}`);
+  return { ok: true as const, id: created.id };
 }
 
 export async function updateInvoiceStatus(invoiceId: string, status: string) {

@@ -9,7 +9,7 @@ import { auditLogs } from "@/lib/db/schema";
 export async function logAudit(
   actorId: string,
   action: string,
-  entity: "expense" | "invoice" | "payment",
+  entity: "expense" | "invoice" | "payment" | "stock",
   entityId: string,
   details?: Record<string, unknown>
 ) {

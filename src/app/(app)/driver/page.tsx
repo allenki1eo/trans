@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MapPin, Package } from "lucide-react";
 import { requireRole } from "@/lib/auth/require";
 import { listShipmentsForDriver } from "@/lib/queries/shipments";
+import { itemsByShipmentId } from "@/lib/queries/stock";
 import { getT } from "@/lib/i18n/locale";
 import { formatDate } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
@@ -16,6 +17,7 @@ export default async function DriverTripsPage() {
   const user = await requireRole("driver", "owner");
   const t = getT();
   const trips = await listShipmentsForDriver(user.id);
+  const itemsMap = await itemsByShipmentId(trips.map((trip) => trip.shipment.id));
 
   return (
     <div className="mx-auto max-w-lg">
@@ -46,6 +48,15 @@ export default async function DriverTripsPage() {
                 <span>{s.goodsDescription}</span>
                 {s.weightOrUnits && <span className="text-muted">· {s.weightOrUnits}</span>}
               </div>
+              {(itemsMap.get(s.id) ?? []).length > 0 && (
+                <ul className="ml-6 space-y-0.5 text-sm text-muted">
+                  {(itemsMap.get(s.id) ?? []).map((line) => (
+                    <li key={line.id}>
+                      {line.name} × {line.quantity.toLocaleString("en-US")} {line.unit}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="text-sm text-muted">
                 {t.driver.myVehicle}: <span className="font-mono text-foreground">{plateNumber ?? "—"}</span>
               </div>

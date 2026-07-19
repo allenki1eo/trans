@@ -3,29 +3,28 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { customerSchema, type CustomerInput } from "@/lib/validation";
-import { upsertCustomer } from "@/lib/actions/customers";
+import { itemSchema, type ItemInput } from "@/lib/validation";
+import { upsertItem } from "@/lib/actions/items";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type Labels = {
   name: string;
-  phone: string;
-  email: string;
-  address: string;
+  unit: string;
+  unitHint: string;
   save: string;
   cancel: string;
   required: string;
 };
 
-export function CustomerForm({
+export function ItemForm({
   id,
   defaults,
   labels,
 }: {
   id: string | null;
-  defaults?: Partial<CustomerInput>;
+  defaults?: Partial<ItemInput>;
   labels: Labels;
 }) {
   const router = useRouter();
@@ -33,16 +32,16 @@ export function CustomerForm({
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<CustomerInput>({
-    resolver: zodResolver(customerSchema),
-    defaultValues: { name: "", phone: "", email: "", address: "", ...defaults },
+  } = useForm<ItemInput>({
+    resolver: zodResolver(itemSchema),
+    defaultValues: { name: "", unit: "", ...defaults },
   });
 
   return (
     <form
       onSubmit={handleSubmit(async (data) => {
-        const result = await upsertCustomer(id, data);
-        if (result.ok) router.push("/customers");
+        const result = await upsertItem(id, data);
+        if (result.ok) router.push("/items");
       })}
       className="max-w-lg space-y-4"
     >
@@ -52,16 +51,9 @@ export function CustomerForm({
         {errors.name && <p className="text-xs text-danger">{labels.required}</p>}
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="phone">{labels.phone}</Label>
-        <Input id="phone" {...register("phone")} placeholder="+255 …" />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="email">{labels.email}</Label>
-        <Input id="email" type="email" {...register("email")} />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="address">{labels.address}</Label>
-        <Input id="address" {...register("address")} />
+        <Label htmlFor="unit">{labels.unit}</Label>
+        <Input id="unit" {...register("unit")} placeholder={labels.unitHint} />
+        {errors.unit && <p className="text-xs text-danger">{labels.required}</p>}
       </div>
       <div className="flex gap-2 pt-2">
         <Button type="submit" disabled={isSubmitting}>

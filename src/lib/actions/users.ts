@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db/client";
@@ -40,7 +39,7 @@ export async function upsertUser(id: string | null, input: UserInput) {
     });
   }
   revalidatePath("/users");
-  redirect("/users");
+  return { ok: true as const };
 }
 
 export async function toggleUserActive(id: string, active: boolean) {

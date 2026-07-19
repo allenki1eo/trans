@@ -1,7 +1,7 @@
 import "server-only";
 import { asc, eq, and } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { customers, profiles, vehicles } from "@/lib/db/schema";
+import { customers, items, profiles, vehicles } from "@/lib/db/schema";
 
 export type Option = { id: string; label: string };
 
@@ -28,4 +28,13 @@ export async function driverOptions(): Promise<Option[]> {
     .where(and(eq(profiles.role, "driver"), eq(profiles.active, true)))
     .orderBy(asc(profiles.fullName));
   return rows;
+}
+
+export type ItemOption = { id: string; name: string; unit: string };
+
+export async function itemOptions(): Promise<ItemOption[]> {
+  return db
+    .select({ id: items.id, name: items.name, unit: items.unit })
+    .from(items)
+    .orderBy(asc(items.name));
 }

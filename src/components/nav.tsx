@@ -5,9 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Boxes,
   FileText,
   LogOut,
   Menu,
+  PackageSearch,
   Receipt,
   Route,
   ScrollText,
@@ -37,8 +39,11 @@ type NavLabels = {
   myTrips: string;
   logout: string;
   sectionOperations: string;
+  sectionInventory: string;
   sectionFinance: string;
   sectionAdmin: string;
+  items: string;
+  stock: string;
 };
 
 type LinkKey = keyof Pick<
@@ -52,6 +57,8 @@ type LinkKey = keyof Pick<
   | "users"
   | "audit"
   | "myTrips"
+  | "items"
+  | "stock"
 >;
 
 const ICONS: Record<LinkKey, typeof BarChart3> = {
@@ -64,10 +71,12 @@ const ICONS: Record<LinkKey, typeof BarChart3> = {
   users: Users,
   audit: ScrollText,
   myTrips: Receipt,
+  items: Boxes,
+  stock: PackageSearch,
 };
 
 type Section = {
-  titleKey: "sectionOperations" | "sectionFinance" | "sectionAdmin" | null;
+  titleKey: "sectionOperations" | "sectionInventory" | "sectionFinance" | "sectionAdmin" | null;
   links: Array<{ key: LinkKey; href: string }>;
 };
 
@@ -82,6 +91,13 @@ function sectionsFor(role: Role): Section[] {
             { key: "shipments", href: "/shipments" },
             { key: "customers", href: "/customers" },
             { key: "vehicles", href: "/vehicles" },
+          ],
+        },
+        {
+          titleKey: "sectionInventory",
+          links: [
+            { key: "stock", href: "/stock" },
+            { key: "items", href: "/items" },
           ],
         },
         {
@@ -104,6 +120,13 @@ function sectionsFor(role: Role): Section[] {
             { key: "vehicles", href: "/vehicles" },
           ],
         },
+        {
+          titleKey: "sectionInventory",
+          links: [
+            { key: "stock", href: "/stock" },
+            { key: "items", href: "/items" },
+          ],
+        },
         { titleKey: "sectionFinance", links: [{ key: "invoices", href: "/invoices" }] },
       ];
     case "accountant":
@@ -117,6 +140,7 @@ function sectionsFor(role: Role): Section[] {
             { key: "vehicles", href: "/vehicles" },
           ],
         },
+        { titleKey: "sectionInventory", links: [{ key: "stock", href: "/stock" }] },
         {
           titleKey: "sectionFinance",
           links: [

@@ -44,7 +44,8 @@ export function VehicleForm({
   return (
     <form
       onSubmit={handleSubmit(async (data) => {
-        await upsertVehicle(id, data);
+        const result = await upsertVehicle(id, data);
+        if (result.ok) router.push("/vehicles");
       })}
       className="max-w-lg space-y-4"
     >

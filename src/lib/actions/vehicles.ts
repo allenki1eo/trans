@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { vehicles } from "@/lib/db/schema";
@@ -29,7 +28,7 @@ export async function upsertVehicle(id: string | null, input: VehicleInput) {
     await db.insert(vehicles).values(values);
   }
   revalidatePath("/vehicles");
-  redirect("/vehicles");
+  return { ok: true as const };
 }
 
 export async function deleteVehicle(id: string) {
