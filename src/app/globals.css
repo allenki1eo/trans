@@ -3,15 +3,57 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme (default) */
+  :root {
+    --background: 40 25% 97%;
+    --surface: 0 0% 100%;
+    --surface-raised: 40 15% 93%;
+    --border: 40 10% 86%;
+    --foreground: 220 15% 12%;
+    --muted: 220 8% 42%;
+    --accent: 36 90% 40%;
+    --accent-hover: 36 90% 34%;
+    --accent-foreground: 0 0% 100%;
+    --success: 150 65% 30%;
+    --info: 210 80% 42%;
+    --warning: 32 92% 38%;
+    --danger: 0 72% 45%;
+  }
+
+  /* Dark theme */
+  .dark {
+    --background: 220 15% 6%;
+    --surface: 220 13% 9%;
+    --surface-raised: 220 12% 12%;
+    --border: 220 10% 18%;
+    --foreground: 40 20% 92%;
+    --muted: 220 8% 55%;
+    --accent: 42 88% 55%;
+    --accent-hover: 42 88% 62%;
+    --accent-foreground: 220 15% 6%;
+    --success: 150 60% 45%;
+    --info: 210 80% 60%;
+    --warning: 38 92% 55%;
+    --danger: 0 72% 55%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
+    background-image: radial-gradient(
+        900px 400px at 85% -10%,
+        hsl(36 90% 45% / 0.06),
+        transparent
+      ),
+      radial-gradient(700px 500px at -10% 110%, hsl(210 80% 50% / 0.05), transparent);
+    background-attachment: fixed;
+  }
+  .dark body {
     background-image: radial-gradient(
         900px 400px at 85% -10%,
         hsl(42 88% 55% / 0.05),
         transparent
       ),
       radial-gradient(700px 500px at -10% 110%, hsl(210 80% 60% / 0.04), transparent);
-    background-attachment: fixed;
   }
   ::selection {
     @apply bg-accent/30;

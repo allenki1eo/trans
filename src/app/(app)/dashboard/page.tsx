@@ -15,6 +15,7 @@ import {
 import { requireRole } from "@/lib/auth/require";
 import { listShipments } from "@/lib/queries/shipments";
 import { getT } from "@/lib/i18n/locale";
+import { getTheme } from "@/lib/theme/theme";
 import { formatDate, formatDateTime, formatTZS } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
@@ -48,6 +49,7 @@ export default async function DashboardPage({
 }) {
   await requireRole("owner", "accountant");
   const t = getT();
+  const theme = getTheme();
 
   const range: Range = RANGES.includes(searchParams.range as Range)
     ? (searchParams.range as Range)
@@ -306,6 +308,7 @@ export default async function DashboardPage({
             <MonthlyTrendChart
               data={trendData}
               labels={{ revenue: t.dashboard.revenue, expenses: t.dashboard.expenses }}
+              mode={theme}
             />
           </CardContent>
         </Card>
@@ -359,6 +362,7 @@ export default async function DashboardPage({
             <RevenueExpensesChart
               data={vehicleChartData}
               labels={{ revenue: t.dashboard.revenue, expenses: t.dashboard.expenses }}
+              mode={theme}
             />
           </CardContent>
         </Card>
@@ -367,7 +371,7 @@ export default async function DashboardPage({
             <CardTitle>{t.dashboard.profitByCustomer}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ProfitByCustomerChart data={customerChartData} label={t.dashboard.profit} />
+            <ProfitByCustomerChart data={customerChartData} label={t.dashboard.profit} mode={theme} />
           </CardContent>
         </Card>
       </div>

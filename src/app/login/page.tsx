@@ -1,11 +1,14 @@
 import { Route, ShieldCheck, TrendingUp, Truck } from "lucide-react";
 import { getLocale, getT } from "@/lib/i18n/locale";
+import { getTheme } from "@/lib/theme/theme";
 import { LocaleToggle } from "@/components/locale-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { LoginForm } from "./login-form";
 
 export default function LoginPage() {
   const t = getT();
   const locale = getLocale();
+  const theme = getTheme();
 
   const highlights = [
     { icon: Route, label: t.nav.shipments },
@@ -61,9 +64,12 @@ export default function LoginPage() {
               </span>
               Trans<span className="text-accent">Track</span>
             </span>
-            <LocaleToggle locale={locale} />
+            <div className="flex items-center gap-2">
+              <LocaleToggle locale={locale} />
+              <ThemeToggle theme={theme} />
+            </div>
           </div>
-          <div className="rounded-xl border border-border bg-surface p-6 shadow-lg shadow-black/20">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-lg shadow-black/5 dark:shadow-black/20">
             <p className="mb-5 text-sm text-muted">{t.auth.welcome}</p>
             <LoginForm
               labels={{

@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import { logout } from "@/lib/actions/auth";
 import { LocaleToggle } from "@/components/locale-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { Locale } from "@/lib/i18n/dictionaries";
+import type { Theme } from "@/lib/theme/theme";
 import type { Role } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
 
@@ -150,6 +152,7 @@ export function Nav({
   appName,
   labels,
   locale,
+  theme,
 }: {
   role: Role;
   userName: string;
@@ -157,6 +160,7 @@ export function Nav({
   appName: string;
   labels: NavLabels;
   locale: Locale;
+  theme: Theme;
 }) {
   const pathname = usePathname();
   const sections = sectionsFor(role);
@@ -167,7 +171,7 @@ export function Nav({
     cn(
       "group flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-all",
       active
-        ? "bg-accent/10 font-medium text-accent shadow-[inset_2px_0_0_0_hsl(42_88%_55%)]"
+        ? "bg-accent/10 font-medium text-accent shadow-[inset_2px_0_0_0_hsl(var(--accent))]"
         : "text-muted hover:bg-surface-raised hover:text-foreground"
     );
 
@@ -223,7 +227,10 @@ export function Nav({
               </button>
             </form>
           </div>
-          <LocaleToggle locale={locale} />
+          <div className="flex items-center gap-2">
+            <LocaleToggle locale={locale} />
+            <ThemeToggle theme={theme} />
+          </div>
         </div>
       </aside>
 
@@ -235,6 +242,7 @@ export function Nav({
           </Link>
           <div className="flex-1" />
           <LocaleToggle locale={locale} />
+          <ThemeToggle theme={theme} />
           <form action={logout}>
             <button
               type="submit"
