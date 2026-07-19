@@ -81,6 +81,7 @@ export const dictionaries = {
       details: "Customer details",
       totalRevenue: "Total revenue",
       unpaid: "Unpaid",
+      statement: "Download statement",
     },
     vehicles: {
       title: "Vehicles",
@@ -264,6 +265,7 @@ export const dictionaries = {
       details: "Taarifa za mteja",
       totalRevenue: "Jumla ya mapato",
       unpaid: "Haijalipwa",
+      statement: "Pakua taarifa ya hesabu",
     },
     vehicles: {
       title: "Magari",

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { desc, eq, sql } from "drizzle-orm";
-import { FileText, Route } from "lucide-react";
+import { Download, FileText, Route } from "lucide-react";
 import { db } from "@/lib/db/client";
 import { customers, invoices, payments, shipments } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/require";
@@ -53,14 +53,25 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
       <PageHeader
         title={customer.name}
         action={
-          can(user.role, "customers.write") && (
-            <Link
-              href={`/customers/${customer.id}/edit`}
-              className={buttonVariants({ variant: "secondary" })}
-            >
-              {t.common.edit}
-            </Link>
-          )
+          <div className="flex items-center gap-2">
+            {can(user.role, "invoices.read") && (
+              <a
+                href={`/api/customers/${customer.id}/statement`}
+                className={buttonVariants({ variant: "secondary" })}
+              >
+                <Download className="h-4 w-4" />
+                {t.customers.statement}
+              </a>
+            )}
+            {can(user.role, "customers.write") && (
+              <Link
+                href={`/customers/${customer.id}/edit`}
+                className={buttonVariants({ variant: "secondary" })}
+              >
+                {t.common.edit}
+              </Link>
+            )}
+          </div>
         }
       />
 
