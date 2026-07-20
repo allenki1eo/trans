@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth/require";
 import { getT } from "@/lib/i18n/locale";
-import { customerOptions, driverOptions, itemOptions, vehicleOptions } from "@/lib/queries/options";
+import { customerOptions, driverOptions, vehicleOptions } from "@/lib/queries/options";
+import { itemOptionsWithStock } from "@/lib/queries/stock";
 import { PageHeader } from "@/components/page-header";
 import { ShipmentForm } from "../shipment-form";
 
@@ -11,7 +12,7 @@ export default async function NewShipmentPage() {
     customerOptions(),
     vehicleOptions(),
     driverOptions(),
-    itemOptions(),
+    itemOptionsWithStock(),
   ]);
 
   return (
@@ -41,6 +42,8 @@ export default async function NewShipmentPage() {
           quantity: t.stock.quantity,
           addLine: t.items.addLine,
           removeLine: t.items.removeLine,
+          available: t.stock.available,
+          exceedsStock: t.stock.exceedsStock,
         }}
       />
     </div>

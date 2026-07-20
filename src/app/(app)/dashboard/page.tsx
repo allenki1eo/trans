@@ -2,18 +2,10 @@ import Link from "next/link";
 import { and, desc, eq, gte, ne, sql, type SQL } from "drizzle-orm";
 import { AlertTriangle, FileText, TrendingUp, Wallet, Coins } from "lucide-react";
 import { db } from "@/lib/db/client";
-import {
-  auditLogs,
-  customers,
-  expenses,
-  invoices,
-  payments,
-  profiles,
-  shipments,
-  vehicles,
-} from "@/lib/db/schema";
+import { auditLogs, customers, expenses, invoices, profiles, shipments, vehicles } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/require";
 import { listShipments } from "@/lib/queries/shipments";
+import { invoiceSummary } from "@/lib/queries/invoices";
 import { getT } from "@/lib/i18n/locale";
 import { getTheme } from "@/lib/theme/theme";
 import { formatDate, formatDateTime, formatTZS } from "@/lib/format";
@@ -69,7 +61,7 @@ export default async function DashboardPage({
     expensesByVehicle,
     revenueByCustomer,
     costByCustomer,
-    unpaidRow,
+    invSummary,
     overdueRow,
     recent,
     revenueByMonth,
@@ -118,12 +110,7 @@ export default async function DashboardPage({
         .innerJoin(shipments, eq(expenses.shipmentId, shipments.id))
         .where(expenseConds.length ? and(...expenseConds) : undefined)
         .groupBy(shipments.customerId),
-      db
-        .select({
-          unpaid: sql<number>`coalesce(sum(${invoices.amount} - coalesce((select sum(${payments.amount}) from ${payments} where ${payments.invoiceId} = ${invoices.id}), 0)), 0)`,
-        })
-        .from(invoices)
-        .where(ne(invoices.status, "paid")),
+      invoiceSummary(),
       db
         .select({ count: sql<number>`count(*)` })
         .from(invoices)
@@ -227,7 +214,7 @@ export default async function DashboardPage({
     },
     {
       label: t.dashboard.unpaidInvoices,
-      value: formatTZS(Math.max(unpaidRow[0]?.unpaid ?? 0, 0)),
+      value: formatTZS(Math.max(invSummary.outstanding, 0)),
       tone: "text-foreground",
       caption: t.dashboard.allTime, // receivables are a live balance, not range-scoped
       icon: FileText,

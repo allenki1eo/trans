@@ -4,8 +4,8 @@ import { db } from "@/lib/db/client";
 import { shipments, tripAssignments } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/require";
 import { getT } from "@/lib/i18n/locale";
-import { customerOptions, driverOptions, itemOptions, vehicleOptions } from "@/lib/queries/options";
-import { listItemsForShipment } from "@/lib/queries/stock";
+import { customerOptions, driverOptions, vehicleOptions } from "@/lib/queries/options";
+import { itemOptionsWithStock, listItemsForShipment } from "@/lib/queries/stock";
 import { PageHeader } from "@/components/page-header";
 import { ShipmentForm } from "../../shipment-form";
 
@@ -24,7 +24,7 @@ export default async function EditShipmentPage({ params }: { params: { id: strin
     customerOptions(),
     vehicleOptions(),
     driverOptions(),
-    itemOptions(),
+    itemOptionsWithStock(shipment.id),
     listItemsForShipment(shipment.id),
   ]);
 
@@ -67,6 +67,8 @@ export default async function EditShipmentPage({ params }: { params: { id: strin
           quantity: t.stock.quantity,
           addLine: t.items.addLine,
           removeLine: t.items.removeLine,
+          available: t.stock.available,
+          exceedsStock: t.stock.exceedsStock,
         }}
       />
     </div>

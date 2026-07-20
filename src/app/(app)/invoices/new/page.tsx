@@ -39,6 +39,10 @@ export default async function NewInvoicePage() {
           save: t.common.save,
           cancel: t.common.cancel,
           required: t.common.required,
+          dueDatePresets: t.invoices.dueDatePresets,
+          days7: t.invoices.days7,
+          days14: t.invoices.days14,
+          days30: t.invoices.days30,
         }}
       />
     </div>

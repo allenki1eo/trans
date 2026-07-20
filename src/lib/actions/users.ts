@@ -7,6 +7,7 @@ import { db } from "@/lib/db/client";
 import { profiles } from "@/lib/db/schema";
 import { requireUser } from "@/lib/auth/require";
 import { can } from "@/lib/authz";
+import { logAudit } from "@/lib/audit";
 import { userSchema, type UserInput } from "@/lib/validation";
 
 export async function upsertUser(id: string | null, input: UserInput) {
@@ -27,15 +28,28 @@ export async function upsertUser(id: string | null, input: UserInput) {
     };
     if (data.password) values.passwordHash = await bcrypt.hash(data.password, 10);
     await db.update(profiles).set(values).where(eq(profiles.id, id));
+    // Never log password data — email/role/name only.
+    await logAudit(user.id, "user.update", "user", id, {
+      email: values.email,
+      role: values.role,
+      passwordChanged: Boolean(data.password),
+    });
   } else {
     if (!data.password) return { ok: false as const, error: "invalid" };
-    await db.insert(profiles).values({
-      email: data.email.toLowerCase(),
-      fullName: data.fullName,
-      phone: data.phone || null,
-      role: data.role,
-      active: data.active,
-      passwordHash: await bcrypt.hash(data.password, 10),
+    const [created] = await db
+      .insert(profiles)
+      .values({
+        email: data.email.toLowerCase(),
+        fullName: data.fullName,
+        phone: data.phone || null,
+        role: data.role,
+        active: data.active,
+        passwordHash: await bcrypt.hash(data.password, 10),
+      })
+      .returning();
+    await logAudit(user.id, "user.create", "user", created.id, {
+      email: created.email,
+      role: created.role,
     });
   }
   revalidatePath("/users");
@@ -47,6 +61,10 @@ export async function toggleUserActive(id: string, active: boolean) {
   if (!can(user.role, "users.manage")) return { ok: false as const, error: "forbidden" };
   if (id === user.id) return { ok: false as const, error: "cannot deactivate yourself" };
   await db.update(profiles).set({ active }).where(eq(profiles.id, id));
+  const target = await db.query.profiles.findFirst({ where: eq(profiles.id, id) });
+  await logAudit(user.id, active ? "user.activate" : "user.deactivate", "user", id, {
+    email: target?.email,
+  });
   revalidatePath("/users");
   return { ok: true as const };
 }

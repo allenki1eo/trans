@@ -12,6 +12,10 @@ import { Select } from "@/components/ui/select";
 
 type ShipmentOption = { id: string; label: string; price: number };
 
+function toDateInputValue(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
 export function InvoiceForm({
   shipments,
   labels,
@@ -24,6 +28,10 @@ export function InvoiceForm({
     save: string;
     cancel: string;
     required: string;
+    dueDatePresets: string;
+    days7: string;
+    days14: string;
+    days30: string;
   };
 }) {
   const router = useRouter();
@@ -36,6 +44,12 @@ export function InvoiceForm({
     resolver: zodResolver(invoiceSchema),
     defaultValues: { shipmentId: "", amount: 0, dueDate: "", status: "draft" },
   });
+
+  const setDueInDays = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    setValue("dueDate", toDateInputValue(d));
+  };
 
   return (
     <form
@@ -73,6 +87,18 @@ export function InvoiceForm({
       <div className="space-y-1.5">
         <Label htmlFor="dueDate">{labels.dueDate}</Label>
         <Input id="dueDate" type="date" {...register("dueDate")} />
+        <div className="flex items-center gap-2 pt-0.5">
+          <span className="text-xs text-muted">{labels.dueDatePresets}:</span>
+          <button type="button" onClick={() => setDueInDays(7)} className="text-xs text-accent hover:underline">
+            {labels.days7}
+          </button>
+          <button type="button" onClick={() => setDueInDays(14)} className="text-xs text-accent hover:underline">
+            {labels.days14}
+          </button>
+          <button type="button" onClick={() => setDueInDays(30)} className="text-xs text-accent hover:underline">
+            {labels.days30}
+          </button>
+        </div>
       </div>
       <div className="flex gap-2 pt-2">
         <Button type="submit" disabled={isSubmitting}>

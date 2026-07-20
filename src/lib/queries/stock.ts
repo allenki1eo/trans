@@ -78,6 +78,31 @@ export async function listItemStock(): Promise<ItemStockRow[]> {
   });
 }
 
+export type ItemWithStock = { id: string; name: string; unit: string; depotStock: number };
+
+/**
+ * Item picker options carrying live depot stock, for the shipment form.
+ * When editing shipment `excludeShipmentId`, that shipment's own current
+ * quantities are added back — those units are already "out" against it,
+ * so they shouldn't count against what's available while re-editing it.
+ */
+export async function itemOptionsWithStock(excludeShipmentId?: string): Promise<ItemWithStock[]> {
+  const [stockRows, ownRows] = await Promise.all([
+    listItemStock(),
+    excludeShipmentId ? listItemsForShipment(excludeShipmentId) : Promise.resolve([]),
+  ]);
+  const ownByItem = new Map<string, number>();
+  for (const row of ownRows) {
+    ownByItem.set(row.itemId, (ownByItem.get(row.itemId) ?? 0) + row.quantity);
+  }
+  return stockRows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    unit: r.unit,
+    depotStock: r.depotStock + (ownByItem.get(r.id) ?? 0),
+  }));
+}
+
 const custodyDriver = alias(profiles, "custody_driver_profile");
 
 export type CustodyRow = {

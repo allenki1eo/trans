@@ -22,7 +22,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
   const customer = await db.query.customers.findFirst({ where: eq(customers.id, params.id) });
   if (!customer) notFound();
 
-  const [shipmentRows, invoiceRows, revenueRow] = await Promise.all([
+  const [shipmentRows, rawInvoiceRows, revenueRow, paidByInvoice] = await Promise.all([
     db
       .select()
       .from(shipments)
@@ -30,10 +30,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
       .orderBy(desc(shipments.createdAt))
       .limit(50),
     db
-      .select({
-        invoice: invoices,
-        paid: sql<number>`coalesce((select sum(${payments.amount}) from ${payments} where ${payments.invoiceId} = ${invoices.id}), 0)`,
-      })
+      .select({ invoice: invoices })
       .from(invoices)
       .where(eq(invoices.customerId, customer.id))
       .orderBy(desc(invoices.createdAt))
@@ -42,7 +39,16 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
       .select({ revenue: sql<number>`coalesce(sum(${shipments.price}), 0)` })
       .from(shipments)
       .where(sql`${shipments.customerId} = ${customer.id} and ${shipments.status} != 'cancelled'`),
+    // Flat query + JS merge: a correlated subquery against a single-table
+    // outer select isn't table-qualified by Drizzle and silently resolves 0.
+    db
+      .select({ invoiceId: payments.invoiceId, total: sql<number>`coalesce(sum(${payments.amount}), 0)` })
+      .from(payments)
+      .groupBy(payments.invoiceId),
   ]);
+
+  const paidMap = new Map(paidByInvoice.map((p) => [p.invoiceId, p.total]));
+  const invoiceRows = rawInvoiceRows.map((r) => ({ invoice: r.invoice, paid: paidMap.get(r.invoice.id) ?? 0 }));
 
   const unpaid = invoiceRows
     .filter((r) => r.invoice.status !== "paid")

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Boxes } from "lucide-react";
 import { db } from "@/lib/db/client";
@@ -41,17 +41,27 @@ export default async function ShipmentDetailPage({ params }: { params: { id: str
     .where(eq(shipments.id, params.id));
   if (!row) notFound();
 
-  const [itemRows, invoiceRows] = await Promise.all([
+  const [itemRows, rawInvoiceRows] = await Promise.all([
     listItemsForShipment(row.shipment.id),
     db
-      .select({
-        invoice: invoices,
-        paid: sql<number>`coalesce((select sum(${payments.amount}) from ${payments} where ${payments.invoiceId} = ${invoices.id}), 0)`,
-      })
+      .select({ invoice: invoices })
       .from(invoices)
       .where(eq(invoices.shipmentId, row.shipment.id))
       .orderBy(desc(invoices.createdAt)),
   ]);
+
+  // Flat query + JS merge: a correlated subquery against a single-table
+  // outer select isn't table-qualified by Drizzle and silently resolves 0.
+  const invoiceIds = rawInvoiceRows.map((r) => r.invoice.id);
+  const paidByInvoice = invoiceIds.length
+    ? await db
+        .select({ invoiceId: payments.invoiceId, total: sql<number>`coalesce(sum(${payments.amount}), 0)` })
+        .from(payments)
+        .where(inArray(payments.invoiceId, invoiceIds))
+        .groupBy(payments.invoiceId)
+    : [];
+  const paidMap = new Map(paidByInvoice.map((p) => [p.invoiceId, p.total]));
+  const invoiceRows = rawInvoiceRows.map((r) => ({ invoice: r.invoice, paid: paidMap.get(r.invoice.id) ?? 0 }));
 
   const s = row.shipment;
 

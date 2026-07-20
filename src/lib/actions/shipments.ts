@@ -6,6 +6,7 @@ import { db } from "@/lib/db/client";
 import { shipmentItems, shipments, tripAssignments } from "@/lib/db/schema";
 import { requireUser } from "@/lib/auth/require";
 import { can } from "@/lib/authz";
+import { logAudit } from "@/lib/audit";
 import {
   shipmentReceivedSchema,
   shipmentSchema,
@@ -46,6 +47,11 @@ export async function upsertShipment(id: string | null, input: ShipmentInput) {
       driverId: data.driverId,
     });
     await db.delete(shipmentItems).where(eq(shipmentItems.shipmentId, id));
+    await logAudit(user.id, "shipment.update", "shipment", id, {
+      origin: values.origin,
+      destination: values.destination,
+      price: values.price,
+    });
   } else {
     const [created] = await db
       .insert(shipments)
@@ -56,6 +62,11 @@ export async function upsertShipment(id: string | null, input: ShipmentInput) {
       shipmentId: created.id,
       vehicleId: data.vehicleId,
       driverId: data.driverId,
+    });
+    await logAudit(user.id, "shipment.create", "shipment", created.id, {
+      origin: values.origin,
+      destination: values.destination,
+      price: values.price,
     });
   }
 
@@ -96,6 +107,8 @@ export async function updateShipmentStatus(shipmentId: string, status: string) {
     if (parsed.data.status === "cancelled") return { ok: false as const, error: "forbidden" };
   }
 
+  const before = await db.query.shipments.findFirst({ where: eq(shipments.id, parsed.data.shipmentId) });
+
   await db
     .update(shipments)
     .set({
@@ -103,6 +116,11 @@ export async function updateShipmentStatus(shipmentId: string, status: string) {
       deliveredAt: parsed.data.status === "delivered" ? new Date() : null,
     })
     .where(eq(shipments.id, parsed.data.shipmentId));
+
+  await logAudit(user.id, "shipment.status", "shipment", parsed.data.shipmentId, {
+    from: before?.status,
+    to: parsed.data.status,
+  });
 
   revalidatePath("/shipments");
   revalidatePath("/driver");
@@ -152,6 +170,10 @@ export async function markShipmentReceived(shipmentId: string, receivedBy: strin
     })
     .where(eq(shipments.id, parsed.data.shipmentId));
 
+  await logAudit(user.id, "shipment.received", "shipment", parsed.data.shipmentId, {
+    receivedBy: parsed.data.receivedBy,
+  });
+
   revalidatePath("/shipments");
   revalidatePath("/driver");
   revalidatePath("/dashboard");
@@ -161,9 +183,16 @@ export async function markShipmentReceived(shipmentId: string, receivedBy: strin
 export async function deleteShipment(id: string) {
   const user = await requireUser();
   if (user.role !== "owner") return { ok: false as const, error: "forbidden" };
+  const deleted = await db.query.shipments.findFirst({ where: eq(shipments.id, id) });
   await db.delete(tripAssignments).where(eq(tripAssignments.shipmentId, id));
   await db.delete(shipmentItems).where(eq(shipmentItems.shipmentId, id));
   await db.delete(shipments).where(eq(shipments.id, id));
+  if (deleted) {
+    await logAudit(user.id, "shipment.delete", "shipment", id, {
+      origin: deleted.origin,
+      destination: deleted.destination,
+    });
+  }
   revalidatePath("/shipments");
   revalidatePath("/stock");
   return { ok: true as const };
