@@ -6,6 +6,7 @@ import { db } from "@/lib/db/client";
 import { customers, invoices, payments, shipments } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/require";
 import { can } from "@/lib/authz";
+import { itemsByShipmentId } from "@/lib/queries/stock";
 import { getT } from "@/lib/i18n/locale";
 import { formatDate, formatTZS } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
@@ -49,6 +50,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
 
   const paidMap = new Map(paidByInvoice.map((p) => [p.invoiceId, p.total]));
   const invoiceRows = rawInvoiceRows.map((r) => ({ invoice: r.invoice, paid: paidMap.get(r.invoice.id) ?? 0 }));
+  const itemsMap = await itemsByShipmentId(shipmentRows.map((s) => s.id));
 
   const unpaid = invoiceRows
     .filter((r) => r.invoice.status !== "paid")
@@ -130,7 +132,11 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
                   <TR key={s.id}>
                     <TD className="text-muted">{s.origin}</TD>
                     <TD className="text-muted">{s.destination}</TD>
-                    <TD>{s.goodsDescription}</TD>
+                    <TD>
+                      {(itemsMap.get(s.id) ?? [])
+                        .map((line) => `${line.name} (${line.quantity.toLocaleString("en-US")} ${line.unit})`)
+                        .join(", ") || "—"}
+                    </TD>
                     <TD>
                       <ShipmentStatusBadge status={s.status} label={t.shipments.statuses[s.status]} />
                     </TD>

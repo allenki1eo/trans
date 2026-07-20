@@ -30,8 +30,6 @@ export default async function NewShipmentPage() {
           driver: t.shipments.driver,
           origin: t.shipments.origin,
           destination: t.shipments.destination,
-          goods: t.shipments.goods,
-          weight: t.shipments.weight,
           price: t.shipments.price,
           distanceKm: t.shipments.distanceKm,
           save: t.common.save,
@@ -44,6 +42,8 @@ export default async function NewShipmentPage() {
           removeLine: t.items.removeLine,
           available: t.stock.available,
           exceedsStock: t.stock.exceedsStock,
+          noItemsInCatalog: t.shipments.noItemsInCatalog,
+          addItemFirst: t.shipments.addItemFirst,
         }}
       />
     </div>

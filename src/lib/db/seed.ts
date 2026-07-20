@@ -6,9 +6,12 @@ import {
   customers,
   expenses,
   invoices,
+  items,
   payments,
   profiles,
+  shipmentItems,
   shipments,
+  stockMovements,
   tripAssignments,
   vehicles,
 } from "./schema";
@@ -105,8 +108,6 @@ async function main() {
         vehicleId: truck1.id,
         origin: "Dar es Salaam",
         destination: "Moshi",
-        goodsDescription: "Cement bags",
-        weightOrUnits: "8t",
         status: "in_transit",
         price: 2_500_000,
         distanceKm: 560,
@@ -117,8 +118,6 @@ async function main() {
         vehicleId: truck2.id,
         origin: "Dar es Salaam",
         destination: "Mwanza",
-        goodsDescription: "Bottled beverages",
-        weightOrUnits: "20t",
         status: "delivered",
         price: 5_200_000,
         distanceKm: 1130,
@@ -131,6 +130,24 @@ async function main() {
   await db.insert(tripAssignments).values([
     { shipmentId: ship1.id, vehicleId: truck1.id, driverId: driver.id },
     { shipmentId: ship2.id, vehicleId: truck2.id, driverId: driver.id },
+  ]);
+
+  const [cementBags, beverages] = await db
+    .insert(items)
+    .values([
+      { name: "Cement bags 50kg", unit: "bags" },
+      { name: "Bottled beverages 500ml", unit: "crates" },
+    ])
+    .returning();
+
+  await db.insert(stockMovements).values([
+    { itemId: cementBags.id, type: "received", quantity: 500, note: "Depot stocktake", recordedBy: owner.id },
+    { itemId: beverages.id, type: "received", quantity: 3000, note: "Depot stocktake", recordedBy: owner.id },
+  ]);
+
+  await db.insert(shipmentItems).values([
+    { shipmentId: ship1.id, itemId: cementBags.id, quantity: 160 },
+    { shipmentId: ship2.id, itemId: beverages.id, quantity: 2000 },
   ]);
 
   await db.insert(expenses).values([

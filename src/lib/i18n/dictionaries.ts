@@ -106,9 +106,10 @@ export const dictionaries = {
       origin: "Origin",
       destination: "Destination",
       goods: "Goods",
-      weight: "Weight / units",
       price: "Price",
       distanceKm: "Distance (km)",
+      noItemsInCatalog: "No items in the catalog yet.",
+      addItemFirst: "Add one first",
       markDelivered: "Mark delivered",
       markInTransit: "Start trip",
       statuses: {
@@ -175,6 +176,7 @@ export const dictionaries = {
       dueIn: "Due in {n} days",
       overdueBy: "{n} days overdue",
       dueToday: "Due today",
+      exceedsBalance: "Amount exceeds the remaining balance",
     },
     users: {
       title: "Users",
@@ -345,9 +347,10 @@ export const dictionaries = {
       origin: "Kutoka",
       destination: "Kwenda",
       goods: "Bidhaa",
-      weight: "Uzito / idadi",
       price: "Bei",
       distanceKm: "Umbali (km)",
+      noItemsInCatalog: "Hakuna bidhaa kwenye orodha bado.",
+      addItemFirst: "Ongeza moja kwanza",
       markDelivered: "Imefika",
       markInTransit: "Anza safari",
       statuses: {
@@ -414,6 +417,7 @@ export const dictionaries = {
       dueIn: "Inatakiwa baada ya siku {n}",
       overdueBy: "Imechelewa siku {n}",
       dueToday: "Inatakiwa leo",
+      exceedsBalance: "Kiasi kimezidi salio lililobaki",
     },
     users: {
       title: "Watumiaji",

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { paymentSchema, type PaymentInput } from "@/lib/validation";
@@ -9,6 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+
+const emptyDefaults = (invoiceId: string) =>
+  ({ invoiceId, amount: "", method: "mpesa", reference: "" }) as unknown as PaymentInput;
 
 export function PaymentForm({
   invoiceId,
@@ -26,8 +30,10 @@ export function PaymentForm({
     required: string;
     methods: Record<(typeof PAYMENT_METHODS)[number], string>;
     payFullBalance: string;
+    exceedsBalance: string;
   };
 }) {
+  const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -36,14 +42,19 @@ export function PaymentForm({
     formState: { errors, isSubmitting },
   } = useForm<PaymentInput>({
     resolver: zodResolver(paymentSchema),
-    defaultValues: { invoiceId, amount: suggestedAmount, method: "mpesa", reference: "" },
+    defaultValues: emptyDefaults(invoiceId),
   });
 
   return (
     <form
       onSubmit={handleSubmit(async (data) => {
+        setServerError(null);
         const result = await recordPayment(data);
-        if (result.ok) reset({ invoiceId, amount: suggestedAmount, method: "mpesa", reference: "" });
+        if (result.ok) {
+          reset(emptyDefaults(invoiceId));
+        } else if (result.error === "exceeds_balance") {
+          setServerError(labels.exceedsBalance);
+        }
       })}
       className="rounded-md border border-border bg-surface-raised/50 p-4"
     >
@@ -67,6 +78,7 @@ export function PaymentForm({
             min="0"
             max={suggestedAmount}
             step="1"
+            placeholder="0"
             className="font-mono"
             {...register("amount")}
           />
@@ -87,6 +99,7 @@ export function PaymentForm({
           <Input id="pay-reference" className="font-mono" {...register("reference")} />
         </div>
       </div>
+      {serverError && <p className="mt-2 text-xs text-danger">{serverError}</p>}
       <Button type="submit" size="sm" className="mt-3" disabled={isSubmitting}>
         {labels.save}
       </Button>

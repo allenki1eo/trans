@@ -3,6 +3,7 @@
 import { useForm, useFieldArray, useWatch, type Control, type UseFormRegister } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Plus, X } from "lucide-react";
 import { shipmentSchema, type ShipmentInput } from "@/lib/validation";
 import { upsertShipment } from "@/lib/actions/shipments";
@@ -21,8 +22,6 @@ type Labels = {
   driver: string;
   origin: string;
   destination: string;
-  goods: string;
-  weight: string;
   price: string;
   distanceKm: string;
   save: string;
@@ -35,6 +34,8 @@ type Labels = {
   removeLine: string;
   available: string;
   exceedsStock: string;
+  noItemsInCatalog: string;
+  addItemFirst: string;
 };
 
 function ItemLineRow({
@@ -126,8 +127,6 @@ export function ShipmentForm({
       driverId: "",
       origin: "",
       destination: "",
-      goodsDescription: "",
-      weightOrUnits: "",
       price: 0,
       items: [],
       ...defaults,
@@ -183,16 +182,7 @@ export function ShipmentForm({
           {err("destination")}
         </div>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="goodsDescription">{labels.goods}</Label>
-        <Input id="goodsDescription" {...register("goodsDescription")} />
-        {err("goodsDescription")}
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="weightOrUnits">{labels.weight}</Label>
-          <Input id="weightOrUnits" {...register("weightOrUnits")} placeholder="8t / 120 boxes" />
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="price">{labels.price} (TZS)</Label>
           <Input id="price" type="number" min="0" step="1" className="font-mono" {...register("price")} />
@@ -204,31 +194,41 @@ export function ShipmentForm({
         </div>
       </div>
 
-      {items.length > 0 && (
-        <div className="space-y-3 rounded-md border border-border p-4">
-          <Label>{labels.itemsTitle}</Label>
-          {fields.map((field, index) => (
-            <ItemLineRow
-              key={field.id}
-              control={control}
-              register={register}
-              index={index}
-              items={items}
-              labels={labels}
-              onRemove={() => remove(index)}
-            />
-          ))}
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => append({ itemId: "", quantity: undefined as unknown as number })}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            {labels.addLine}
-          </Button>
-        </div>
-      )}
+      <div className="space-y-3 rounded-md border border-border p-4">
+        <Label>{labels.itemsTitle}</Label>
+        {items.length === 0 ? (
+          <p className="text-sm text-muted">
+            {labels.noItemsInCatalog}{" "}
+            <Link href="/items/new" className="text-accent hover:underline">
+              {labels.addItemFirst}
+            </Link>
+          </p>
+        ) : (
+          <>
+            {fields.map((field, index) => (
+              <ItemLineRow
+                key={field.id}
+                control={control}
+                register={register}
+                index={index}
+                items={items}
+                labels={labels}
+                onRemove={() => remove(index)}
+              />
+            ))}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => append({ itemId: "", quantity: undefined as unknown as number })}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {labels.addLine}
+            </Button>
+            {err("items")}
+          </>
+        )}
+      </div>
 
       <div className="flex gap-2 pt-2">
         <Button type="submit" disabled={isSubmitting}>

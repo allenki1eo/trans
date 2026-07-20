@@ -27,8 +27,6 @@ export async function upsertShipment(id: string | null, input: ShipmentInput) {
     vehicleId: data.vehicleId,
     origin: data.origin,
     destination: data.destination,
-    goodsDescription: data.goodsDescription,
-    weightOrUnits: data.weightOrUnits || null,
     price: data.price,
     distanceKm: data.distanceKm || null,
   };

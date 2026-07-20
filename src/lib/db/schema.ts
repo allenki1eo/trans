@@ -71,8 +71,6 @@ export const shipments = sqliteTable(
     vehicleId: text("vehicle_id").references(() => vehicles.id),
     origin: text("origin").notNull(),
     destination: text("destination").notNull(),
-    goodsDescription: text("goods_description").notNull(),
-    weightOrUnits: text("weight_or_units"),
     status: text("status", { enum: SHIPMENT_STATUSES }).notNull().default("pending"),
     // All money is whole TZS — no fractional shillings in practice.
     price: real("price").notNull().default(0),
@@ -197,9 +195,9 @@ export const items = sqliteTable("items", {
   createdAt: createdAt(),
 });
 
-// Structured line items per shipment — what's actually loaded, replacing
-// (well, supplementing — goods_description/weight_or_units stay for
-// backward compatibility with existing rows) a single free-text field.
+// Structured line items per shipment — what's actually loaded. Every
+// shipment must carry at least one line (enforced in shipmentSchema); this
+// is the single source of truth for what's being transported.
 export const shipmentItems = sqliteTable(
   "shipment_items",
   {

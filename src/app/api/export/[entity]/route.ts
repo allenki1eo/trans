@@ -4,6 +4,7 @@ import { db } from "@/lib/db/client";
 import { customers, expenses, invoices, payments, profiles, shipments, vehicles } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/auth/session";
 import { can } from "@/lib/authz";
+import { itemsByShipmentId } from "@/lib/queries/stock";
 
 export const dynamic = "force-dynamic";
 
@@ -79,11 +80,11 @@ async function exportPayments(): Promise<{ headers: string[]; rows: unknown[][] 
 async function exportShipments(): Promise<{ headers: string[]; rows: unknown[][] }> {
   const data = await db
     .select({
+      id: shipments.id,
       createdAt: shipments.createdAt,
       customer: customers.name,
       origin: shipments.origin,
       destination: shipments.destination,
-      goods: shipments.goodsDescription,
       vehicle: vehicles.plateNumber,
       status: shipments.status,
       price: shipments.price,
@@ -94,6 +95,7 @@ async function exportShipments(): Promise<{ headers: string[]; rows: unknown[][]
     .innerJoin(customers, eq(shipments.customerId, customers.id))
     .leftJoin(vehicles, eq(shipments.vehicleId, vehicles.id))
     .orderBy(desc(shipments.createdAt));
+  const itemsMap = await itemsByShipmentId(data.map((r) => r.id));
   return {
     headers: [
       "created_at",
@@ -112,7 +114,9 @@ async function exportShipments(): Promise<{ headers: string[]; rows: unknown[][]
       r.customer,
       r.origin,
       r.destination,
-      r.goods,
+      (itemsMap.get(r.id) ?? [])
+        .map((line) => `${line.name} (${line.quantity.toLocaleString("en-US")} ${line.unit})`)
+        .join("; "),
       r.vehicle,
       r.status,
       r.price,

@@ -29,18 +29,21 @@ export const vehicleSchema = z.object({
   status: z.enum(VEHICLE_STATUSES),
 });
 
-export const shipmentSchema = z.object({
-  customerId: z.string().min(1),
-  vehicleId: z.string().min(1),
-  driverId: z.string().min(1),
-  origin: z.string().trim().min(1),
-  destination: z.string().trim().min(1),
-  goodsDescription: z.string().trim().min(1),
-  weightOrUnits: z.string().trim().optional().or(z.literal("")),
-  price: z.coerce.number().min(0),
-  distanceKm: z.coerce.number().min(0).optional(),
-  items: z.array(shipmentItemLineSchema).optional().default([]),
-});
+export const shipmentSchema = z
+  .object({
+    customerId: z.string().min(1),
+    vehicleId: z.string().min(1),
+    driverId: z.string().min(1),
+    origin: z.string().trim().min(1),
+    destination: z.string().trim().min(1),
+    price: z.coerce.number().min(0),
+    distanceKm: z.coerce.number().min(0).optional(),
+    items: z.array(shipmentItemLineSchema).optional().default([]),
+  })
+  .refine((data) => data.items.length > 0, {
+    message: "required",
+    path: ["items"],
+  });
 
 export const shipmentStatusSchema = z.object({
   shipmentId: z.string().min(1),

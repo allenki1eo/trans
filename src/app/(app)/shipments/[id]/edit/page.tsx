@@ -39,8 +39,6 @@ export default async function EditShipmentPage({ params }: { params: { id: strin
           driverId: assignment?.driverId ?? "",
           origin: shipment.origin,
           destination: shipment.destination,
-          goodsDescription: shipment.goodsDescription,
-          weightOrUnits: shipment.weightOrUnits ?? "",
           price: shipment.price,
           distanceKm: shipment.distanceKm ?? undefined,
           items: existingItems.map((line) => ({ itemId: line.itemId, quantity: line.quantity })),
@@ -55,8 +53,6 @@ export default async function EditShipmentPage({ params }: { params: { id: strin
           driver: t.shipments.driver,
           origin: t.shipments.origin,
           destination: t.shipments.destination,
-          goods: t.shipments.goods,
-          weight: t.shipments.weight,
           price: t.shipments.price,
           distanceKm: t.shipments.distanceKm,
           save: t.common.save,
@@ -69,6 +65,8 @@ export default async function EditShipmentPage({ params }: { params: { id: strin
           removeLine: t.items.removeLine,
           available: t.stock.available,
           exceedsStock: t.stock.exceedsStock,
+          noItemsInCatalog: t.shipments.noItemsInCatalog,
+          addItemFirst: t.shipments.addItemFirst,
         }}
       />
     </div>

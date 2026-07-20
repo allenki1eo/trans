@@ -5,8 +5,10 @@ import { db } from "@/lib/db/client";
 import {
   customers,
   invoices,
+  items,
   payments,
   profiles,
+  shipmentItems,
   shipments,
   tripAssignments,
   vehicles,
@@ -24,6 +26,7 @@ const baseSelect = {
   driverName: driverProfile.fullName,
   invoicedAmount: sql<number>`coalesce((select sum(${invoices.amount}) from ${invoices} where ${invoices.shipmentId} = ${shipments.id}), 0)`,
   paidAmount: sql<number>`coalesce((select sum(${payments.amount}) from ${payments} join ${invoices} on ${payments.invoiceId} = ${invoices.id} where ${invoices.shipmentId} = ${shipments.id}), 0)`,
+  itemsSummary: sql<string | null>`(select group_concat(${items.name} || ' (' || printf('%g', ${shipmentItems.quantity}) || ' ' || ${items.unit} || ')', ', ') from ${shipmentItems} inner join ${items} on ${items.id} = ${shipmentItems.itemId} where ${shipmentItems.shipmentId} = ${shipments.id})`,
 };
 
 export type ShipmentRow = {
@@ -34,6 +37,7 @@ export type ShipmentRow = {
   driverName: string | null;
   invoicedAmount: number;
   paidAmount: number;
+  itemsSummary: string | null;
 };
 
 export type PaymentState = "paid" | "partial" | "unpaid" | "no_invoice";
@@ -57,7 +61,6 @@ export async function listShipments(filters: ShipmentFilters = {}): Promise<Ship
     const search = or(
       like(shipments.origin, term),
       like(shipments.destination, term),
-      like(shipments.goodsDescription, term),
       like(customers.name, term),
       like(vehicles.plateNumber, term)
     );

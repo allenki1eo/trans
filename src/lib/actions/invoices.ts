@@ -82,6 +82,19 @@ export async function recordPayment(input: PaymentInput) {
   const invoice = await db.query.invoices.findFirst({ where: eq(invoices.id, data.invoiceId) });
   if (!invoice) return { ok: false as const, error: "invalid" };
 
+  // Record exactly what was actually paid — never let a payment push the
+  // running total past the invoice amount (that would silently record more
+  // than the customer paid, rather than the real received amount).
+  const [existing] = await db
+    .select({ total: sql<number>`coalesce(sum(${payments.amount}), 0)` })
+    .from(payments)
+    .where(eq(payments.invoiceId, data.invoiceId));
+  const alreadyPaid = existing?.total ?? 0;
+  const remaining = invoice.amount - alreadyPaid;
+  if (data.amount > remaining) {
+    return { ok: false as const, error: "exceeds_balance" };
+  }
+
   const [payment] = await db
     .insert(payments)
     .values({
@@ -100,11 +113,7 @@ export async function recordPayment(input: PaymentInput) {
   });
 
   // Auto-mark paid once payments cover the invoice amount.
-  const [row] = await db
-    .select({ total: sql<number>`coalesce(sum(${payments.amount}), 0)` })
-    .from(payments)
-    .where(eq(payments.invoiceId, data.invoiceId));
-  if ((row?.total ?? 0) >= invoice.amount) {
+  if (alreadyPaid + data.amount >= invoice.amount) {
     await db.update(invoices).set({ status: "paid" }).where(eq(invoices.id, data.invoiceId));
   }
 

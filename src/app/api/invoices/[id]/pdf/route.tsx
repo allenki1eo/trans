@@ -5,6 +5,7 @@ import { db } from "@/lib/db/client";
 import { customers, invoices, payments, shipments } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/auth/session";
 import { can } from "@/lib/authz";
+import { listItemsForShipment } from "@/lib/queries/stock";
 import { formatDate, formatTZS } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -43,8 +44,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
       customerPhone: customers.phone,
       origin: shipments.origin,
       destination: shipments.destination,
-      goods: shipments.goodsDescription,
-      weight: shipments.weightOrUnits,
+      shipmentId: shipments.id,
     })
     .from(invoices)
     .innerJoin(customers, eq(invoices.customerId, customers.id))
@@ -53,8 +53,14 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 
   if (!row) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const paymentRows = await db.select().from(payments).where(eq(payments.invoiceId, row.invoice.id));
+  const [paymentRows, itemRows] = await Promise.all([
+    db.select().from(payments).where(eq(payments.invoiceId, row.invoice.id)),
+    listItemsForShipment(row.shipmentId),
+  ]);
   const paid = paymentRows.reduce((sum, p) => sum + p.amount, 0);
+  const goodsLine = itemRows
+    .map((line) => `${line.name} (${line.quantity.toLocaleString("en-US")} ${line.unit})`)
+    .join(", ");
 
   const pdf = (
     <Document>
@@ -92,10 +98,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
               <Text>
                 Transport: {row.origin} — {row.destination}
               </Text>
-              <Text style={{ color: "#777" }}>
-                {row.goods}
-                {row.weight ? ` (${row.weight})` : ""}
-              </Text>
+              {goodsLine ? <Text style={{ color: "#777" }}>{goodsLine}</Text> : null}
             </View>
             <Text>{formatTZS(row.invoice.amount)}</Text>
           </View>

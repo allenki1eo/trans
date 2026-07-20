@@ -111,7 +111,7 @@ export default async function ShipmentsPage({
             </TR>
           )}
           {rows.map((row) => {
-            const { shipment: s, customerName, plateNumber, driverName } = row;
+            const { shipment: s, customerName, plateNumber, driverName, itemsSummary } = row;
             const payState = paymentStateOf(row);
             return (
             <TR key={s.id}>
@@ -120,7 +120,7 @@ export default async function ShipmentsPage({
               <TD className="text-muted">{s.destination}</TD>
               <TD>
                 <Link href={`/shipments/${s.id}`} className="text-accent hover:underline">
-                  {s.goodsDescription}
+                  {itemsSummary ?? "—"}
                 </Link>
               </TD>
               <TD className="font-mono text-muted">{plateNumber ?? "—"}</TD>

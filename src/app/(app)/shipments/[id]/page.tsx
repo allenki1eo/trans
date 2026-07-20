@@ -86,11 +86,6 @@ export default async function ShipmentDetailPage({ params }: { params: { id: str
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1 text-sm">
             <p>
-              <span className="text-muted">{t.shipments.goods}: </span>
-              {s.goodsDescription}
-              {s.weightOrUnits ? ` (${s.weightOrUnits})` : ""}
-            </p>
-            <p>
               <span className="text-muted">{t.shipments.vehicle}: </span>
               <span className="font-mono">{row.plateNumber ?? "—"}</span>
             </p>

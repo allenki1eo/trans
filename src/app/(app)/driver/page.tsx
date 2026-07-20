@@ -43,19 +43,17 @@ export default async function DriverTripsPage() {
               <ShipmentStatusBadge status={s.status} label={t.shipments.statuses[s.status]} />
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-2 text-sm">
-                <Package className="h-4 w-4 text-muted" />
-                <span>{s.goodsDescription}</span>
-                {s.weightOrUnits && <span className="text-muted">· {s.weightOrUnits}</span>}
-              </div>
               {(itemsMap.get(s.id) ?? []).length > 0 && (
-                <ul className="ml-6 space-y-0.5 text-sm text-muted">
-                  {(itemsMap.get(s.id) ?? []).map((line) => (
-                    <li key={line.id}>
-                      {line.name} × {line.quantity.toLocaleString("en-US")} {line.unit}
-                    </li>
-                  ))}
-                </ul>
+                <div className="flex items-start gap-2 text-sm">
+                  <Package className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
+                  <ul className="space-y-0.5 text-muted">
+                    {(itemsMap.get(s.id) ?? []).map((line) => (
+                      <li key={line.id}>
+                        {line.name} × {line.quantity.toLocaleString("en-US")} {line.unit}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
               <div className="text-sm text-muted">
                 {t.driver.myVehicle}: <span className="font-mono text-foreground">{plateNumber ?? "—"}</span>

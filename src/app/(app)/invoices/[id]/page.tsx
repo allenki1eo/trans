@@ -6,6 +6,7 @@ import { db } from "@/lib/db/client";
 import { customers, invoices, payments, shipments, type PaymentMethod } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/require";
 import { can } from "@/lib/authz";
+import { listItemsForShipment } from "@/lib/queries/stock";
 import { getT } from "@/lib/i18n/locale";
 import { formatDate, formatDateTime, formatTZS } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -36,7 +37,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
       customerAddress: customers.address,
       origin: shipments.origin,
       destination: shipments.destination,
-      goods: shipments.goodsDescription,
+      shipmentId: shipments.id,
     })
     .from(invoices)
     .innerJoin(customers, eq(invoices.customerId, customers.id))
@@ -44,11 +45,13 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
     .where(eq(invoices.id, params.id));
   if (!row) notFound();
 
-  const paymentRows = await db
-    .select()
-    .from(payments)
-    .where(eq(payments.invoiceId, row.invoice.id))
-    .orderBy(desc(payments.paidAt));
+  const [paymentRows, itemRows] = await Promise.all([
+    db.select().from(payments).where(eq(payments.invoiceId, row.invoice.id)).orderBy(desc(payments.paidAt)),
+    listItemsForShipment(row.shipmentId),
+  ]);
+  const goodsLine = itemRows
+    .map((line) => `${line.name} (${line.quantity.toLocaleString("en-US")} ${line.unit})`)
+    .join(", ");
 
   const paid = paymentRows.reduce((sum, p) => sum + p.amount, 0);
   const balance = row.invoice.amount - paid;
@@ -91,7 +94,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
             <p className="mt-2">
               {row.origin} → {row.destination}
             </p>
-            <p>{row.goods}</p>
+            {goodsLine && <p>{goodsLine}</p>}
             <p className="mt-2">
               {t.invoices.dueDate}: {formatDate(row.invoice.dueDate)}
               {dueText && (
@@ -179,6 +182,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
                 required: t.common.required,
                 methods: t.invoices.methods,
                 payFullBalance: t.invoices.payFullBalance,
+                exceedsBalance: t.invoices.exceedsBalance,
               }}
             />
           )}
