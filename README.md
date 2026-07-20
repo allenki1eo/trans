@@ -1,4 +1,4 @@
-# TransTrack — Transit & Goods Tracking Platform
+# Dami&Co — Transit & Goods Tracking Platform
 
 Single source of truth for a Tanzanian transit/logistics business: customers,
 shipments, vehicle expenses, invoices (PDF export, M-Pesa payment logging) and

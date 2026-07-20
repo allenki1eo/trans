@@ -166,10 +166,10 @@ function Brand() {
   return (
     <span className="flex items-center gap-2 text-lg font-bold tracking-tight">
       <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-accent to-warning font-black text-accent-foreground shadow-[0_0_16px_-2px_hsl(var(--accent)/0.5)]">
-        T
+        D
       </span>
       <span>
-        Trans<span className="text-accent">Track</span>
+        Dami<span className="text-accent">&Co</span>
       </span>
     </span>
   );

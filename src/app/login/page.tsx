@@ -30,9 +30,9 @@ export default function LoginPage() {
         />
         <span className="relative flex items-center gap-2 text-xl font-bold tracking-tight">
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-accent to-warning font-black text-accent-foreground">
-            T
+            D
           </span>
-          Trans<span className="text-accent">Track</span>
+          Dami<span className="text-accent">&Co</span>
         </span>
         <div className="relative max-w-md space-y-6">
           <h1 className="text-3xl font-bold leading-tight">{t.auth.tagline}</h1>
@@ -60,9 +60,9 @@ export default function LoginPage() {
           <div className="mb-6 flex items-center justify-between lg:justify-end">
             <span className="flex items-center gap-2 text-xl font-bold tracking-tight lg:hidden">
               <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-accent to-warning font-black text-accent-foreground">
-                T
+                D
               </span>
-              Trans<span className="text-accent">Track</span>
+              Dami<span className="text-accent">&Co</span>
             </span>
             <div className="flex items-center gap-2">
               <LocaleToggle locale={locale} />

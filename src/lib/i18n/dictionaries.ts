@@ -3,7 +3,7 @@ export type Locale = (typeof LOCALES)[number];
 
 export const dictionaries = {
   en: {
-    appName: "TransTrack",
+    appName: "Dami&Co",
     nav: {
       dashboard: "Dashboard",
       customers: "Customers",
@@ -215,7 +215,7 @@ export const dictionaries = {
     },
   },
   sw: {
-    appName: "TransTrack",
+    appName: "Dami&Co",
     nav: {
       dashboard: "Dashibodi",
       customers: "Wateja",

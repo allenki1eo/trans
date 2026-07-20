@@ -74,7 +74,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.brand}>TransTrack</Text>
+          <Text style={styles.brand}>Dami&Co</Text>
           <View>
             <Text style={styles.title}>CUSTOMER STATEMENT</Text>
             <Text style={{ textAlign: "right" }}>{formatDate(new Date())}</Text>
